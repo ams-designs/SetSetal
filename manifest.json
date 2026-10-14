@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "SetSetal — Cleaner Communities",
+  "short_name": "SetSetal",
+  "description": "Find local waste collection services in The Gambia.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FAF8F1",
+  "theme_color": "#147D59",
+  "categories": ["utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
