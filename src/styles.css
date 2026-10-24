@@ -7,7 +7,7 @@
   --terracotta: #C46A43;
   --yellow: #E8B84A;
   --text: #28302D;
-  --muted: #68746D;
+  --muted: #5F6B64; /* 4.8:1 on --green-soft, WCAG AA */
   --border: #E4EBE5;
   --error: #B42318;
   --radius-sm: 10px;
@@ -57,6 +57,9 @@ svg { display: block; width: 24px; height: 24px; }
   transform: translateY(-150%);
 }
 .skip-link:focus { transform: translateY(0); }
+/* Text is filled in from the translation files on start-up; hide the empty
+   shell until then so it never flashes. */
+body:not(.ready) { visibility: hidden; }
 
 .topbar {
   position: sticky;
