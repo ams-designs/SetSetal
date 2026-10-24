@@ -17,7 +17,7 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="topbar">
-    <a class="brand" href="#home" aria-label="SetSetal home" data-go="home">
+    <a class="brand" href="#/home" aria-label="SetSetal home" data-go="home">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 40 40">
           <path d="M20 5 26 8 23 14 17 14 14 9Z"/>
@@ -64,6 +64,7 @@
         <div class="hero-actions">
           <button class="button primary" data-go="find">Find a collector</button>
           <button class="button secondary" data-go="join">Register as a collector</button>
+          <button id="install-button" class="button secondary" type="button" hidden>Install app</button>
         </div>
       </div>
 
@@ -92,7 +93,7 @@
 
     <section class="screen" id="find" aria-labelledby="find-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-go="home" aria-label="Back to home">
+        <button class="back-button" type="button" data-back aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div><p class="eyebrow">Resident service</p><h1 id="find-title">Find a collector</h1></div>
@@ -102,33 +103,17 @@
         <label for="area">Your area</label>
         <select id="area" name="area">
           <option value="All areas">All areas</option>
-          <option>Banjul</option>
-          <option>Bakau</option>
-          <option>Kanifing</option>
-          <option>Serrekunda</option>
-          <option>Brikama</option>
-          <option>Other / not listed</option>
+          <option value="Other / not listed">Other / not listed</option>
         </select>
 
         <label for="vehicle-filter">Collection vehicle</label>
         <select id="vehicle-filter" name="vehicle">
           <option value="all">All vehicle types</option>
-          <option value="Municipal truck">Municipal truck</option>
-          <option value="Private truck">Private truck</option>
-          <option value="Small car or van">Small car or van</option>
-          <option value="Tricycle">Tricycle</option>
-          <option value="Donkey cart">Donkey cart</option>
-          <option value="Horse cart">Horse cart</option>
         </select>
 
         <label for="waste-type">Waste type</label>
         <select id="waste-type" name="waste">
           <option value="all">Any household waste</option>
-          <option>Household bags</option>
-          <option>Garden waste</option>
-          <option>Bulky items</option>
-          <option>Recyclables</option>
-          <option>Business waste</option>
         </select>
 
         <button class="button primary" type="submit">Show matching services</button>
@@ -139,12 +124,12 @@
         <div><h2>Available listings</h2><p id="results-count" class="muted" aria-live="polite"></p></div>
         <button id="clear-filters" class="text-button" type="button">Clear filters</button>
       </div>
-      <div id="collector-results" class="collector-list"></div>
+      <div id="collector-results" class="collector-list" aria-live="polite"></div>
     </section>
 
     <section class="screen" id="profile" aria-labelledby="profile-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-back aria-label="Go back">
+        <button class="back-button" type="button" data-back aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div><p class="eyebrow">Service details</p><h1 id="profile-title">Collector profile</h1></div>
@@ -154,7 +139,7 @@
 
     <section class="screen" id="join" aria-labelledby="join-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-go="home" aria-label="Back to home">
+        <button class="back-button" type="button" data-back aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div><p class="eyebrow">For collection providers</p><h1 id="join-title">Register your service</h1></div>
@@ -171,26 +156,19 @@
         <label for="provider-vehicle">Vehicle or collection method <span class="required">*</span></label>
         <select id="provider-vehicle" name="vehicle" required>
           <option value="">Choose a vehicle</option>
-          <option>Municipal truck</option>
-          <option>Private truck</option>
-          <option>Small car or van</option>
-          <option>Tricycle</option>
-          <option>Donkey cart</option>
-          <option>Horse cart</option>
         </select>
 
         <label for="provider-area">Main service area <span class="required">*</span></label>
         <select id="provider-area" name="area" required>
           <option value="">Choose an area</option>
-          <option>Banjul</option><option>Bakau</option><option>Kanifing</option>
-          <option>Serrekunda</option><option>Brikama</option><option>Other / not listed</option>
+          <option value="Other / not listed">Other / not listed</option>
         </select>
 
-        <label for="provider-waste">Waste types collected</label>
-        <select id="provider-waste" name="waste">
-          <option>Household bags</option><option>Garden waste</option>
-          <option>Bulky items</option><option>Recyclables</option><option>Business waste</option>
-        </select>
+        <fieldset id="provider-waste" class="checkbox-group">
+          <legend>Waste types you collect <span class="required">*</span></legend>
+          <div id="provider-waste-options"></div>
+          <p id="provider-waste-error" class="field-error" role="alert" hidden>Choose at least one waste type.</p>
+        </fieldset>
 
         <label for="provider-description">Service description</label>
         <textarea id="provider-description" name="description" rows="3" maxlength="400" placeholder="Describe your service (optional)"></textarea>
@@ -208,7 +186,7 @@
 
     <section class="screen" id="preview" aria-labelledby="preview-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-back aria-label="Go back">
+        <button class="back-button" type="button" data-back aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div><p class="eyebrow">Local preview only</p><h1 id="preview-title">Your listing preview</h1></div>
@@ -220,7 +198,7 @@
 
     <section class="screen" id="help" aria-labelledby="help-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-back aria-label="Go back">
+        <button class="back-button" type="button" data-back aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div><p class="eyebrow">Support</p><h1 id="help-title">Help and feedback</h1></div>
@@ -249,7 +227,7 @@
 
     <section class="screen" id="admin" aria-labelledby="admin-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-go="home" aria-label="Back to home">
+        <button class="back-button" type="button" data-back aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <div><p class="eyebrow">Prototype only</p><h1 id="admin-title">Admin overview</h1></div>

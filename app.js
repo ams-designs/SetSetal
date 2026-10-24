@@ -4,9 +4,15 @@ const SetSetal = (() => {
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
+  // Single source for the lists used by filters, registration and validation.
+  const AREAS = ["Banjul", "Bakau", "Kanifing", "Serrekunda", "Brikama"];
+  const OTHER_AREA = "Other / not listed";
+  const VEHICLES = ["Municipal truck", "Private truck", "Small car or van", "Tricycle", "Donkey cart", "Horse cart"];
+  const WASTE_TYPES = ["Household bags", "Garden waste", "Bulky items", "Recyclables", "Business waste"];
+
   const state = {
     currentScreen: "home",
-    history: ["home"],
+    profileId: null,
     reports: [],
     draftListing: null,
     installPrompt: null
@@ -140,19 +146,59 @@ const SetSetal = (() => {
     }, 3200);
   }
 
-  function go(screenId, options = {}) {
+  function isScreen(screenId) {
     const target = document.getElementById(screenId);
-    if (!target || !target.classList.contains("screen")) {
+    return Boolean(target && target.classList.contains("screen"));
+  }
+
+  function hashFor(screenId, id) {
+    // "#/find" rather than "#find": a hash matching a section id makes the
+    // browser scroll to it and reset focus.
+    return "#/" + screenId + (id ? "/" + encodeURIComponent(id) : "");
+  }
+
+  function parseHash(hash) {
+    const [screen, id] = hash.replace(/^#\/?/, "").split("/");
+    return { screen: screen || "home", id: id ? decodeURIComponent(id) : null };
+  }
+
+  // Screens that need data fall back to a sensible parent when it is missing,
+  // for example after a reload or a deep link.
+  function resolveRoute(route) {
+    if (!isScreen(route.screen)) return { screen: "home" };
+    if (route.screen === "profile") {
+      return sampleCollectors.some((item) => item.id === route.id)
+        ? route
+        : { screen: "find" };
+    }
+    if (route.screen === "preview" && !state.draftListing) return { screen: "join" };
+    return { screen: route.screen, id: null };
+  }
+
+  // Browser history is the only back stack. Each entry stores its depth, so
+  // back() knows whether there is an in-app screen to return to.
+  function go(screenId, options = {}) {
+    if (!isScreen(screenId)) {
       console.error("Unknown SetSetal screen:", screenId);
       toast("That page is not available yet.");
       return;
     }
 
-    if (screenId !== state.currentScreen && options.back !== true) {
-      state.history.push(state.currentScreen);
+    const id = options.id ?? null;
+    const changed = screenId !== state.currentScreen || id !== state.profileId;
+
+    if (!options.fromPop && changed) {
+      const depth = (history.state?.depth ?? 0) + 1;
+      history.pushState({ screen: screenId, id, depth }, "", hashFor(screenId, id));
     }
 
+    if (screenId === "profile") renderProfile(id);
+    show(screenId, id, options);
+  }
+
+  function show(screenId, id, options = {}) {
     state.currentScreen = screenId;
+    state.profileId = id;
 
     $$(".screen").forEach((screen) => {
       const active = screen.id === screenId;
@@ -170,16 +216,36 @@ const SetSetal = (() => {
     });
 
     window.scrollTo({ top: 0, behavior: "auto" });
+
+    if (options.focus !== false) {
+      const heading = $(`#${screenId} h1`);
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        heading.focus({ preventScroll: true });
+      }
+    }
   }
 
   function back() {
-    if (state.history.length > 1) {
-      state.history.pop();
-      const previous = state.history.pop();
-      go(previous || "home");
-    } else {
-      go("home", { back: true });
+    if ((history.state?.depth ?? 0) > 0) {
+      history.back(); // popstate renders the previous screen
+    } else if (state.currentScreen !== "home") {
+      // Opened by deep link: there is no in-app screen behind this one.
+      history.replaceState({ screen: "home", id: null, depth: 0 }, "", hashFor("home"));
+      show("home", null);
     }
+  }
+
+  function handlePopState(event) {
+    const requested = event.state ?? parseHash(location.hash);
+    const route = resolveRoute(requested);
+    if (route.screen !== requested.screen || !event.state) {
+      const depth = event.state?.depth ?? 0;
+      history.replaceState({ screen: route.screen, id: route.id ?? null, depth }, "",
+        hashFor(route.screen, route.id));
+    }
+    if (route.screen === "profile") renderProfile(route.id);
+    show(route.screen, route.id ?? null);
   }
 
   function iconFor(vehicle) {
@@ -188,7 +254,6 @@ const SetSetal = (() => {
 
   function matchesFilters(collector, filters) {
     const areaMatches = filters.area === "All areas" ||
-      filters.area === "Other / not listed" ||
       collector.area === filters.area;
 
     const vehicleMatches = filters.vehicle === "all" ||
@@ -231,20 +296,35 @@ const SetSetal = (() => {
     $("#results-count").textContent =
       `${results.length} demonstration ${results.length === 1 ? "listing" : "listings"}`;
 
-    $("#collector-results").innerHTML = results.length
-      ? results.map(collectorCard).join("")
-      : `<div class="empty-state">
+    let empty = `<div class="empty-state">
           <h3>No matching sample listings</h3>
           <p>Try a different area, vehicle, or waste type.</p>
         </div>`;
+
+    if (filters.area === OTHER_AREA) {
+      empty = `<div class="empty-state">
+          <h3>We don't have listings for your area yet</h3>
+          <p>Tell us where you are on the Help screen.</p>
+          <button class="button secondary" type="button" data-go="help">Go to Help</button>
+        </div>`;
+    }
+
+    $("#collector-results").innerHTML = results.length
+      ? results.map(collectorCard).join("")
+      : empty;
   }
 
   function showProfile(id) {
-    const collector = sampleCollectors.find((item) => item.id === id);
-    if (!collector) {
+    if (!sampleCollectors.some((item) => item.id === id)) {
       toast("This listing could not be found.");
       return;
     }
+    go("profile", { id });
+  }
+
+  function renderProfile(id) {
+    const collector = sampleCollectors.find((item) => item.id === id);
+    if (!collector) return;
 
     $("#profile-content").innerHTML = `
       <article class="panel profile-card">
@@ -276,9 +356,7 @@ const SetSetal = (() => {
           <p>This sample has no real phone number. No call or booking can be made from this listing.</p>
         </div>
       </article>
-      <button class="button secondary full-width" data-go="find">Back to listings</button>`;
-
-    go("profile");
+      <button class="button secondary full-width" data-go="find">See all listings</button>`;
   }
 
   function readRegistration(form) {
@@ -288,9 +366,38 @@ const SetSetal = (() => {
       phone: String(data.get("phone") || "").trim(),
       vehicle: String(data.get("vehicle") || ""),
       area: String(data.get("area") || ""),
-      waste: String(data.get("waste") || "Household bags"),
+      waste: data.getAll("waste").map(String).filter((type) => WASTE_TYPES.includes(type)),
       description: String(data.get("description") || "").trim()
     };
+  }
+
+  function optionsHTML(values) {
+    return values.map((value) =>
+      `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
+    ).join("");
+  }
+
+  // Fill every list control from the constants above. Placeholder and special
+  // options ("All areas", "Other / not listed") stay in index.html.
+  function populateLists() {
+    const fill = (selector, values) => {
+      const select = $(selector);
+      const other = $(`option[value="${OTHER_AREA}"]`, select);
+      if (other) other.insertAdjacentHTML("beforebegin", optionsHTML(values));
+      else select.insertAdjacentHTML("beforeend", optionsHTML(values));
+    };
+
+    fill("#area", AREAS);
+    fill("#provider-area", AREAS);
+    fill("#vehicle-filter", VEHICLES);
+    fill("#provider-vehicle", VEHICLES);
+    fill("#waste-type", WASTE_TYPES);
+
+    $("#provider-waste-options").innerHTML = WASTE_TYPES.map((type) => `
+      <label class="checkbox-row">
+        <input type="checkbox" name="waste" value="${escapeHTML(type)}">
+        <span>${escapeHTML(type)}</span>
+      </label>`).join("");
   }
 
   function showPreview(listing) {
@@ -305,7 +412,9 @@ const SetSetal = (() => {
         </div>
         <div class="detail-row"><strong>Vehicle</strong><p>${escapeHTML(listing.vehicle)}</p></div>
         <div class="detail-row"><strong>Main area</strong><p>${escapeHTML(listing.area)}</p></div>
-        <div class="detail-row"><strong>Waste type</strong><p>${escapeHTML(listing.waste)}</p></div>
+        <div class="detail-row"><strong>Waste types</strong>
+          <ul class="detail-list">${listing.waste.map((type) => `<li>${escapeHTML(type)}</li>`).join("")}</ul>
+        </div>
         <div class="detail-row"><strong>Contact number</strong><p>${escapeHTML(listing.phone)}</p></div>
         <div class="detail-row"><strong>Service description</strong><p>${escapeHTML(listing.description || "No description provided.")}</p></div>
         <p class="small-note">This preview is temporary and visible only in this browser session.</p>
@@ -316,6 +425,20 @@ const SetSetal = (() => {
   function updateAdminCounts() {
     $("#admin-listing-count").textContent = String(sampleCollectors.length);
     $("#admin-report-count").textContent = String(state.reports.length);
+  }
+
+  // The error is linked only while it shows, so it is never read out early.
+  function setWasteError(show) {
+    $("#provider-waste-error").hidden = !show;
+    $$("#provider-waste input").forEach((input) => {
+      if (show) {
+        input.setAttribute("aria-invalid", "true");
+        input.setAttribute("aria-describedby", "provider-waste-error");
+      } else {
+        input.removeAttribute("aria-invalid");
+        input.removeAttribute("aria-describedby");
+      }
+    });
   }
 
   function handleRegistration(event) {
@@ -335,6 +458,20 @@ const SetSetal = (() => {
       return;
     }
 
+    if (!VEHICLES.includes(listing.vehicle) ||
+        !(AREAS.includes(listing.area) || listing.area === OTHER_AREA)) {
+      $("#registration-feedback").hidden = false;
+      $("#registration-feedback").textContent = "Please choose a vehicle and an area from the lists.";
+      return;
+    }
+
+    if (listing.waste.length === 0) {
+      setWasteError(true);
+      $("#provider-waste input").focus();
+      return;
+    }
+
+    setWasteError(false);
     state.draftListing = listing;
     $("#registration-feedback").hidden = true;
     showPreview(listing);
@@ -366,14 +503,18 @@ const SetSetal = (() => {
       return;
     }
 
-    state.installPrompt.prompt();
-    state.installPrompt.userChoice.then((choice) => {
+    const prompt = state.installPrompt;
+    // A prompt can be used only once, so hide the button whatever the outcome.
+    state.installPrompt = null;
+    $("#install-button").hidden = true;
+
+    prompt.prompt();
+    prompt.userChoice.then((choice) => {
       if (choice && choice.outcome === "accepted") {
         toast("Installation accepted by the browser.");
       } else {
         toast("Installation was cancelled.");
       }
-      state.installPrompt = null;
     }).catch(() => {
       toast("Use your browser menu to install SetSetal.");
     });
@@ -414,6 +555,9 @@ const SetSetal = (() => {
     });
 
     $("#registration-form").addEventListener("submit", handleRegistration);
+    $("#provider-waste").addEventListener("change", () => {
+      if ($$("#provider-waste input:checked").length > 0) setWasteError(false);
+    });
     $("#report-form").addEventListener("submit", handleReport);
 
     $("#finish-preview").addEventListener("click", () => {
@@ -423,16 +567,34 @@ const SetSetal = (() => {
       toast("Preview finished. Nothing was published or submitted.");
     });
 
+    $("#install-button").addEventListener("click", installPWA);
+
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       state.installPrompt = event;
-      toast("SetSetal can be installed from the browser menu.");
+      $("#install-button").hidden = false;
     });
 
     window.addEventListener("appinstalled", () => {
       state.installPrompt = null;
+      $("#install-button").hidden = true;
       toast("SetSetal was installed.");
     });
+
+    window.addEventListener("popstate", handlePopState);
+  }
+
+  function initRoute() {
+    const route = resolveRoute(parseHash(location.hash));
+    // A reload keeps the entry's depth, so back still works afterwards.
+    const depth = history.state?.screen === route.screen ? history.state.depth ?? 0 : 0;
+    history.replaceState(
+      { screen: route.screen, id: route.id ?? null, depth },
+      "",
+      hashFor(route.screen, route.id)
+    );
+    if (route.screen === "profile") renderProfile(route.id);
+    show(route.screen, route.id ?? null, { focus: false });
   }
 
   function registerServiceWorker() {
@@ -447,7 +609,9 @@ const SetSetal = (() => {
   }
 
   function init() {
+    populateLists();
     bindEvents();
+    initRoute();
     renderCollectors();
     updateAdminCounts();
     registerServiceWorker();
