@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "setsetal-shell-v0-4";
+const CACHE_NAME = "setsetal-shell-v0-5";
 
 const APP_SHELL = [
   "./",
