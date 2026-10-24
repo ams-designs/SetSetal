@@ -48,75 +48,75 @@ The front-end prototype demonstrates the intended user journey and interface. De
 
 ## Technology
 
-The initial prototype uses:
-
-- **HTML** — page structure.
-- **CSS** — responsive layout, accessible controls, and styling.
-- **Vanilla JavaScript** — navigation and prototype interactions.
-- **SVG** — scalable interface and vehicle icons.
-- **Web App Manifest** — installation metadata.
-- **Service Worker** — basic app-shell caching.
-
-No JavaScript framework or build step is required for this version.
+- **Vite + TypeScript** with vanilla modules. No UI framework.
+- **CSS** for the responsive layout, accessible controls and styling.
+- **SVG** interface and vehicle icons, with PNG app icons for Android.
+- **vite-plugin-pwa** (Workbox) generates the web app manifest and the service worker, and versions the offline cache on every build.
+- **Playwright** end-to-end tests on a Pixel 5 profile.
 
 ## Project Structure
 
-Keep the following files together in the project root:
-
 ```text
 setsetal/
-├── index.html       # App screens and page structure
-├── styles.css       # Colours, layout, responsive styling
-├── app.js           # Navigation and prototype interactions
-├── manifest.json    # PWA metadata and display settings
-├── sw.js            # Service worker and app-shell caching
-├── icon.svg         # Vector app icon
-└── README.md        # Project documentation
+├── index.html              # Screen markup; text comes from data-i18n keys
+├── src/
+│   ├── main.ts             # Start-up and event wiring
+│   ├── router.ts           # Hash routes, history and back
+│   ├── listings.ts         # Sample data, filters, cards and profile
+│   ├── forms.ts            # Registration, preview and feedback
+│   ├── install.ts          # "Install app" button
+│   ├── ui.ts               # $, $$, escapeHTML, toast
+│   ├── data/lookups.ts     # Areas, vehicles, waste and report types
+│   ├── i18n/               # en.json (source), wo.json, mnk.json, t() helper
+│   └── styles.css          # Design tokens and layout
+├── public/                 # icon.svg and PNG icons, copied as-is
+├── tests/e2e/              # Playwright specs
+├── vite.config.ts          # Build, manifest and service worker settings
+└── netlify.toml            # Hosting and preview deploys
 ```
 
-The structure may evolve as the project grows. Create additional files only when the corresponding feature is implemented.
+### Screen URLs
+
+Every screen has a shareable URL: `#/`, `#/find`, `#/collector/<id>`, `#/join`, `#/join/preview`, `#/help` and `#/admin`.
 
 ## Run Locally
 
-### Option 1: Python
-
-Install Python if needed. Open a terminal in the project folder and run:
+Install Node.js 22 or later, then:
 
 ```bash
-python -m http.server 8000
+npm i
+npm run dev        # development server with hot reload at http://localhost:5173
 ```
 
-Open the application at:
+To try the production build, including the service worker and offline mode:
 
-```text
-http://localhost:8000
+```bash
+npm run build
+npm run preview    # http://localhost:4173
 ```
 
-Stop the server with `Ctrl+C`.
-
-### Option 2: Visual Studio Code
-
-1. Open the project folder in Visual Studio Code.
-2. Start a local development server using an extension such as Live Server, if installed.
-3. Open the local URL provided by the extension.
-
-Opening `index.html` directly using a `file://` URL may display the interface, but service workers and PWA installation generally require a secure context.
+The service worker is only active in the production build.
 
 ## Install on a Phone
 
-For a realistic PWA installation test:
-
-1. Deploy the application to a hosting service that supports **HTTPS**, or use a secure local development environment.
-2. Open the HTTPS URL in a compatible mobile browser.
-3. Open the browser menu.
-4. Select **Install app** or **Add to Home screen**, depending on the browser.
-5. Launch SetSetal from the home screen and test the layout.
-
-For broader Android compatibility, provide PNG app icons at **192 × 192** and **512 × 512** in addition to the SVG icon.
+1. Deploy the app to a host with **HTTPS**. Netlify builds every branch to a preview URL once the repository is connected.
+2. Open the HTTPS URL in Chrome on Android.
+3. Tap **Install app** on the home screen, or use the browser menu and choose **Install app** / **Add to Home screen**.
+4. Launch SetSetal from the home screen and test the layout.
 
 ## Testing
 
-Before sharing the prototype with testers, check that:
+```bash
+npm run typecheck
+npx playwright install chromium   # once
+npm test
+```
+
+To use an installed Chromium instead of downloading one, set `CHROMIUM_PATH`, for example `CHROMIUM_PATH=/usr/bin/chromium npm test`.
+
+The Playwright suite covers most of the checklist below, plus back navigation, deep links, offline reload, axe accessibility checks and console errors. CI runs the type-check, build and tests on every push and pull request.
+
+Before sharing the app with testers, check that:
 
 - [ ] Welcome and role-selection buttons open the expected screens.
 - [ ] Residents can filter listings by area, vehicle, and waste type.
@@ -130,6 +130,8 @@ Before sharing the prototype with testers, check that:
 - [ ] The browser console has no unexpected JavaScript errors.
 - [ ] Offline behaviour is tested separately from online behaviour.
 - [ ] Sample listings are never presented as real or verified providers.
+- [ ] In-app and Android hardware back return one screen at a time.
+- [ ] The in-app button installs the app, and it launches standalone.
 
 Test with Gambian residents and collectors before finalising neighbourhood names, categories, terminology, language options, or assumptions about local collection practices.
 

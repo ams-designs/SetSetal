@@ -10,8 +10,8 @@ The phases run in order. Each one ends with something real people can use. The d
 
 | # | Phase | Duration | Status | File |
 |---|---|---|---|---|
-| 0 | Fix the prototype | ~1 week | **Active** | [phase-0-fix-prototype.md](phase-0-fix-prototype.md) |
-| 1 | Foundation | ~2 weeks | Not started | [phase-1-foundation.md](phase-1-foundation.md) |
+| 0 | Fix the prototype | ~1 week | Tasks done; real-phone test pending | [phase-0-fix-prototype.md](phase-0-fix-prototype.md) |
+| 1 | Foundation | ~2 weeks | **Active** | [phase-1-foundation.md](phase-1-foundation.md) |
 | 2 | Backend and trusted listings | ~3–4 weeks | Not started | [phase-2-backend.md](phase-2-backend.md) |
 | 3 | Controlled pilot | ~4–6 weeks | Not started | [phase-3-pilot.md](phase-3-pilot.md) |
 | 4 | Google Play release | ~1–2 weeks | Not started | [phase-4-play-store.md](phase-4-play-store.md) |

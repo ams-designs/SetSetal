@@ -5,19 +5,23 @@ Mobile-first PWA that helps residents in The Gambia find local waste collectors 
 **Status:** clickable prototype. All listings are demonstration data. No backend.
 **Plan of record:** [docs/plan/README.md](docs/plan/README.md). Check which phase is active there before starting work.
 
-## Current layout (Phase 0)
+## Current layout (Phase 1)
 
-No framework and no build step. Serve with `python3 -m http.server 8000` and open `http://localhost:8000`.
+Vite + TypeScript with vanilla modules, no UI framework. `npm run dev` for development; `npm run build && npm run preview` for the production build (the service worker only exists there). `npm test` runs Playwright against the build; set `CHROMIUM_PATH` to use an installed Chromium.
 
 | File | Role |
 |---|---|
-| `index.html` | All 7 screens as `<section class="screen" id="...">`: home, find, profile, join, preview, help, admin |
-| `app.js` | One IIFE `SetSetal`. Handles navigation (`go`, `back`), filters, rendering, forms and install |
-| `styles.css` | Design tokens on `:root` (`--green`, `--ivory`, …) and the layout |
-| `sw.js` | App-shell service worker. **`CACHE_NAME` has to be bumped by hand on every release** |
-| `manifest.json`, `icon.svg` | PWA metadata. PNG icons are still missing |
+| `index.html` | All 7 screens as `<section class="screen" id="...">`: home, find, profile, join, preview, help, admin. No literal text: elements carry `data-i18n` / `data-i18n-aria-label` / `data-i18n-placeholder` keys |
+| `src/router.ts` | Hash routes (`#/`, `#/find`, `#/collector/:id`, `#/join`, `#/join/preview`, `#/help`, `#/admin`), `go`, `back`, popstate. Browser history is the only back stack |
+| `src/listings.ts`, `src/forms.ts`, `src/install.ts`, `src/ui.ts` | Listings and filters; registration, preview and feedback; install button; `$`, `escapeHTML`, `toast` |
+| `src/data/lookups.ts` | The single source for areas, vehicles, waste and report types (ids; labels come from i18n) |
+| `src/i18n/` | `en.json` is the source of truth; `wo.json`/`mnk.json` are stubs; `review-status.json` tracks native review; `t(key, vars)` |
+| `src/styles.css` | Design tokens on `:root` (`--green`, `--ivory`, …) and the layout |
+| `vite.config.ts` | Manifest and `vite-plugin-pwa` (Workbox `generateSW`). Cache versioning is automatic |
+| `public/` | `icon.svg` and PNG icons |
+| `tests/e2e/` | Playwright specs (Pixel 5). Every test fails on a console error |
 
-From Phase 1 on, the target is Vite + TypeScript with vanilla modules, `vite-plugin-pwa`, a Supabase backend, Playwright tests and static hosting. See [docs/plan/README.md](docs/plan/README.md#target-stack).
+The target stack is in [docs/plan/README.md](docs/plan/README.md#target-stack).
 
 ## Non-negotiable product rules
 
@@ -35,7 +39,7 @@ These rules make the product trustworthy, so treat them as constraints, not pref
 - **Target device:** a low-end Android phone on slow, paid data. Keep payloads small, add no heavy dependencies, and make it work offline-first.
 - **Accessibility:** touch targets of 48×48 px or larger, visible focus, labelled controls, `aria-live` for results and toasts, `aria-current` on the nav, and respect for `prefers-reduced-motion`.
 - **Icons:** use SVG, never emoji. The back chevron path is `m15 18-6-6 6-6`.
-- **Lists:** keep areas, vehicle types and waste types in a single source. Today that's the constants in `app.js`; from Phase 2 it's the database. Don't add another hard-coded copy.
+- **Lists:** keep areas, vehicle types and waste types in a single source. Today that's `src/data/lookups.ts`; from Phase 2 it's the database. Don't add another hard-coded copy.
 - **Copy:** use British English, plain and short. From Phase 1 all user-facing text lives in translation files (en first, then Wolof and Mandinka, checked by native speakers).
 - **Commits:** keep them small and focused, and tie each one to a task in the active phase file.
 

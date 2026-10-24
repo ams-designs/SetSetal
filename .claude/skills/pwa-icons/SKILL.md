@@ -31,5 +31,5 @@ If `npx -p` can't resolve the import, run `npm i --no-save sharp` in a scratch f
 ]
 ```
 4. In `index.html`, change the apple touch icon to `<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">`.
-5. Add the PNGs to `APP_SHELL` in `sw.js` and bump `CACHE_NAME`.
+5. Phase 0: add the PNGs to `APP_SHELL` in `sw.js` and bump `CACHE_NAME`. Phase 1+: icons live in `public/icons/` and the manifest in `vite.config.ts`; Workbox precaches them automatically.
 6. Verify: look at the maskable PNG (using Read on the image) to make sure no part of the glyph falls outside the centre circle at 80%. Chrome DevTools → Application → Manifest should show no icon warnings.
