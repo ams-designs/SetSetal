@@ -22,6 +22,8 @@ jobs:
       - run: npm ci
       - name: Type-check and build
         run: npm run build
+      - name: Database migrations and RLS tests (PGlite)
+        run: npm run test:db
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests (Pixel 5)

@@ -7,9 +7,13 @@
 ## Tasks
 
 - [ ] Create the Supabase project and set up the CLI locally (`supabase init`, `supabase start`).
-- [ ] Write migrations for the schema in [data-model.md](data-model.md), using `/supabase-migration`.
-- [ ] RLS: the public sees only approved listings, collectors edit only their own (and can't change `status`), and admins see everything. Write SQL tests for each policy.
+  - [x] `supabase/` initialised (`config.toml`, migrations, tests).
+  - [ ] Hosted project, or Docker for `supabase start` (needs the owner's account or `sudo`).
+- [x] Write migrations for the schema in [data-model.md](data-model.md), using `/supabase-migration`.
+- [x] RLS: the public sees only approved listings, collectors edit only their own (and can't change `status`), and admins see everything. Write SQL tests for each policy. `npm run test:db` runs them in PGlite (CI too); `supabase test db` runs the same files on a real stack.
 - [ ] Seed `areas`, `waste_types` and `vehicle_types` from the D3 answer (Brikama and its neighbourhoods). The front end reads these tables, so delete the hard-coded lists.
+  - [x] Seeded in a migration: vehicle, waste and report types, and the `brikama` area.
+  - [ ] Brikama neighbourhoods (owner to list), then switch the front end to the tables.
 - [ ] Phone OTP sign-in for collectors (Supabase Auth with an SMS provider). Residents get no sign-in.
 - [ ] Collector flow: submit a listing (multiple areas and waste types, with an explicit consent checkbox that writes `consent_at`), view its status, and edit it.
 - [ ] Admin screen behind sign-in and the admin role:

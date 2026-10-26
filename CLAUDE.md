@@ -7,7 +7,7 @@ Mobile-first PWA that helps residents in The Gambia find local waste collectors 
 
 ## Current layout (Phase 1)
 
-Vite + TypeScript with vanilla modules, no UI framework. `npm run dev` for development; `npm run build && npm run preview` for the production build (the service worker only exists there). `npm test` runs Playwright against the build; set `CHROMIUM_PATH` to use an installed Chromium.
+Vite + TypeScript with vanilla modules, no UI framework. `npm run dev` for development; `npm run build && npm run preview` for the production build (the service worker only exists there). `npm test` runs Playwright against the build; set `CHROMIUM_PATH` to use an installed Chromium, or `BASE_URL` to test a deployed preview. `npm run test:db` runs the database tests.
 
 | File | Role |
 |---|---|
@@ -20,6 +20,8 @@ Vite + TypeScript with vanilla modules, no UI framework. `npm run dev` for devel
 | `vite.config.ts` | Manifest and `vite-plugin-pwa` (Workbox `generateSW`). Cache versioning is automatic |
 | `public/` | `icon.svg` and PNG icons |
 | `tests/e2e/` | Playwright specs (Pixel 5). Every test fails on a console error |
+| `supabase/` | Phase 2 backend: `migrations/` (schema, RLS, lookup seeds) and `tests/` (pgTAP). Not wired to the front end yet |
+| `scripts/test-db.mjs` | `npm run test:db`: applies the migrations and runs the pgTAP tests in PGlite, with no Docker. `scripts/db-test/` stubs the Supabase roles and a pgTAP subset |
 
 The target stack is in [docs/plan/README.md](docs/plan/README.md#target-stack).
 
