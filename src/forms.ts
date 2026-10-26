@@ -2,9 +2,10 @@ import { t } from "./i18n";
 import {
   OTHER_AREA, REPORT_TYPES,
   areaLabel, isArea, isReportType, isVehicle, isWaste, reportTypeLabel, vehicleLabel, wasteLabel,
-  type ReportTypeId, type VehicleId, type WasteId
+  type VehicleId, type WasteId
 } from "./data/lookups";
 import { areaOptions, fillSelect, iconFor, sampleCollectors, vehicleOptions, wasteOptions } from "./listings";
+import { submitReport } from "./reports";
 import { go } from "./router";
 import { $, $$, escapeHTML, toast } from "./ui";
 
@@ -17,15 +18,10 @@ interface DraftListing {
   description: string;
 }
 
-interface Report {
-  type: ReportTypeId;
-  message: string;
-  createdAt: string;
-}
-
-// Nothing here leaves the browser: drafts and reports live in memory only.
+// Registration drafts stay in memory only until collector sign-in exists.
 let draftListing: DraftListing | null = null;
-const reports: Report[] = [];
+// The real listing a report is about, set from its profile.
+let reportTarget: { id: string; name: string } | null = null;
 
 export const hasDraft = (): boolean => draftListing !== null;
 
@@ -130,31 +126,69 @@ function handleRegistration(event: SubmitEvent): void {
   go("preview");
 }
 
-function handleReport(event: SubmitEvent): void {
+function renderReportTarget(): void {
+  const box = $("#report-target");
+  box.hidden = !reportTarget;
+  box.innerHTML = reportTarget ? `
+        <p>${escapeHTML(t("help.report.about", { name: reportTarget.name }))}</p>
+        <button class="text-button" type="button" id="clear-report-target">${escapeHTML(t("help.report.removeTarget"))}</button>` : "";
+}
+
+// Called from a real listing's profile before opening the Help screen.
+export function setReportTarget(target: { id: string; name: string } | null): void {
+  reportTarget = target;
+  renderReportTarget();
+  if (target) $<HTMLSelectElement>("#report-type").value = "incorrect-listing";
+  $("#report-feedback").hidden = true;
+}
+
+let sendingReport = false;
+
+async function handleReport(event: SubmitEvent): Promise<void> {
   event.preventDefault();
   const form = event.currentTarget as HTMLFormElement;
-  if (!form.reportValidity()) return;
+  if (sendingReport || !form.reportValidity()) return;
 
   const data = new FormData(form);
   const type = String(data.get("type") ?? "");
-  reports.push({
+  const message = String(data.get("message") ?? "").trim();
+  // "required" accepts a message of only spaces, which the server refuses.
+  if (!message) {
+    const field = $<HTMLTextAreaElement>("#report-message");
+    field.setCustomValidity(t("help.report.emptyMessage"));
+    field.reportValidity();
+    return;
+  }
+  const submit = $<HTMLButtonElement>("#report-submit");
+  sendingReport = true;
+  submit.disabled = true;
+  submit.textContent = t("help.report.sending");
+
+  const result = await submitReport({
     type: isReportType(type) ? type : "general",
-    message: String(data.get("message") ?? "").trim(),
-    createdAt: new Date().toISOString()
+    message,
+    collector_id: reportTarget?.id ?? null
   });
+
+  sendingReport = false;
+  submit.disabled = false;
+  submit.textContent = t("help.report.submit");
 
   const feedback = $("#report-feedback");
   feedback.hidden = false;
   feedback.innerHTML =
-    `<strong>${escapeHTML(t("help.report.recorded"))}</strong><p>${escapeHTML(t("help.report.recordedNotSent"))}</p>`;
-
-  form.reset();
-  updateAdminCounts();
+    `<strong>${escapeHTML(t(`help.report.${result}.title`))}</strong><p>${escapeHTML(t(`help.report.${result}.body`))}</p>`;
+  // A report that couldn't be sent or saved stays in the form to try again.
+  if (result === "sent" || result === "sentUnlinked" || result === "queued") {
+    form.reset();
+    setReportTarget(null);
+    feedback.hidden = false;
+  }
 }
 
 export function updateAdminCounts(): void {
   $("#admin-listing-count").textContent = String(sampleCollectors.length);
-  $("#admin-report-count").textContent = String(reports.length);
+  $("#admin-report-count").textContent = t("admin.notConnected");
 }
 
 export function bindForms(): void {
@@ -162,7 +196,12 @@ export function bindForms(): void {
   $("#provider-waste").addEventListener("change", () => {
     if ($$("#provider-waste input:checked").length > 0) setWasteError(false);
   });
-  $<HTMLFormElement>("#report-form").addEventListener("submit", handleReport);
+  $<HTMLFormElement>("#report-form").addEventListener("submit", (event) => void handleReport(event));
+  $("#report-message").addEventListener("input", (event) =>
+    (event.currentTarget as HTMLTextAreaElement).setCustomValidity(""));
+  $("#report-target").addEventListener("click", (event) => {
+    if ((event.target as Element).closest("#clear-report-target")) setReportTarget(null);
+  });
 
   $("#finish-preview").addEventListener("click", () => {
     draftListing = null;

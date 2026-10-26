@@ -1,12 +1,13 @@
 import "./styles.css";
 import { detectLocale, setLocale, t, translatePage, type MessageKey } from "./i18n";
-import { bindForms, hasDraft, populateForms, renderPreview, updateAdminCounts } from "./forms";
+import { bindForms, hasDraft, populateForms, renderPreview, setReportTarget, updateAdminCounts } from "./forms";
 import { bindInstall } from "./install";
 import {
-  clearFilters, findCollector, listingsPending, loadListings, populateFilters, renderCollectors, renderProfile,
+  clearFilters, findCollector, listingsPending, loadListings, nameOf, populateFilters, renderCollectors, renderProfile,
   showingDemos
 } from "./listings";
 import { back, currentRoute, go, isScreen, redirect, startRouter, type Route } from "./router";
+import { startOutbox } from "./reports";
 import { $, toast } from "./ui";
 
 // Screens that need data fall back to a sensible parent when it is missing,
@@ -45,6 +46,7 @@ function bindNavigation(): void {
     if (goButton) {
       event.preventDefault();
       const screen = goButton.dataset.go ?? "";
+      if (screen === "help") setReportTarget(null);
       if (isScreen(screen)) go(screen);
       else toast(t("app.pageUnavailable"));
       return;
@@ -58,10 +60,23 @@ function bindNavigation(): void {
       return;
     }
 
+    const reportButton = target.closest<HTMLElement>("[data-report]");
+    if (reportButton) {
+      const listing = findCollector(reportButton.dataset.report ?? "");
+      if (listing && !listing.demo) {
+        setReportTarget({ id: listing.id, name: nameOf(listing) });
+        go("help");
+      }
+      return;
+    }
+
     if (target.closest("[data-back]")) back();
   });
 
-  $("#help-button").addEventListener("click", () => go("help"));
+  $("#help-button").addEventListener("click", () => {
+    setReportTarget(null);
+    go("help");
+  });
 
   $("#search-form").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -85,6 +100,13 @@ function init(): void {
   startRouter({ resolve, beforeShow });
   renderCollectors();
   void loadListings(listingsChanged);
+  startOutbox(({ sent, dropped }) => {
+    const messages = [
+      sent === 1 ? t("help.report.flushed.one") : sent > 1 ? t("help.report.flushed.other", { count: sent }) : "",
+      dropped ? t("help.report.dropped") : ""
+    ];
+    toast(messages.filter(Boolean).join(" "));
+  });
   updateAdminCounts();
   document.body.classList.add("ready");
 }

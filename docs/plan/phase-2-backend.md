@@ -22,7 +22,7 @@
   - [ ] reports list
   - [ ] audit history
 - [x] Contact buttons (`tel:` and `wa.me/<E.164 number without +>`) appear only when the status is approved and `consent_at` is set, following D1 (both). The Find and profile screens read `public_collectors` (`src/api.ts`); saved copies lose contact details after 48 hours and expire after 7 days.
-- [ ] Offline report queue: Workbox `BackgroundSyncPlugin` on the reports insert, or a small IndexedDB outbox. Tell the user clearly that the report is queued.
+- [x] Offline report queue: Workbox `BackgroundSyncPlugin` on the reports insert, or a small IndexedDB outbox. Tell the user clearly that the report is queued. A localStorage outbox (`src/reports.ts`) sends on start-up and when the phone comes back online; reports can be linked to a real listing from its profile.
 - [x] Generate TypeScript types from the schema (`supabase gen types`). In `src/types/db.ts`; regenerate after each migration.
 - [x] Keep the "Demonstration listing" labels for any remaining sample data, and never mix samples with real listings. Real listings replace all samples as soon as one is approved.
 

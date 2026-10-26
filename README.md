@@ -44,7 +44,7 @@ The front-end prototype demonstrates the intended user journey and interface. De
 - Basic navigation and responsive layouts.
 - A PWA manifest and service worker for app-shell caching.
 
-**Important:** Sample collectors are fictional examples for interface testing. They are not verified businesses or endorsements. Registration previews and feedback are not sent to a server. Do not enter sensitive personal information into the prototype.
+**Important:** Sample collectors are fictional examples for interface testing. They are not verified businesses or endorsements. Registration previews are not sent to a server. Feedback is sent to the SetSetal team without your name or contact details (saved on the phone first if it can't be sent); do not include addresses or other personal information.
 
 ## Technology
 
@@ -123,7 +123,7 @@ Before sharing the app with testers, check that:
 - [ ] Selecting a listing opens its details.
 - [ ] Registration validation identifies missing or malformed input.
 - [ ] Registration previews clearly state that they have not been published.
-- [ ] Feedback screens explain that reports are not sent to a server.
+- [ ] Feedback says clearly whether it was sent, saved on the phone to send later, or not sent.
 - [ ] Controls work with touch and keyboard input.
 - [ ] Text remains readable at increased browser font sizes.
 - [ ] The layout works on narrow mobile screens.

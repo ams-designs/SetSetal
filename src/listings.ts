@@ -220,7 +220,7 @@ export const showingDemos = (): boolean => listings.some((listing) => listing.de
 export const findCollector = (id: string | null): Listing | undefined =>
   listings.find((listing) => listing.id === id);
 
-const nameOf = (listing: Listing): string =>
+export const nameOf = (listing: Listing): string =>
   listing.demo ? t(`demo.${listing.id}.name` as MessageKey) : listing.name;
 const descriptionOf = (listing: Listing): string =>
   listing.demo ? t(`demo.${listing.id}.description` as MessageKey) : listing.description;
@@ -388,6 +388,8 @@ export function renderProfile(id: string | null): void {
           row(t("profile.waste"), wasteList(collector.waste)) +
           (descriptionOf(collector) ? row(t("profile.about"), descriptionOf(collector)) : "")}${
           contactSection(collector)}${savedLine(collector)}
-      </article>
+      </article>${collector.demo ? "" : `
+      <button class="button secondary full-width" type="button"
+        data-report="${escapeHTML(collector.id)}">${escapeHTML(t("profile.report"))}</button>`}
       <button class="button secondary full-width" data-go="find">${escapeHTML(t("profile.allListings"))}</button>`;
 }

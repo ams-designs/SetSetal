@@ -207,12 +207,13 @@
       </div>
       <form id="report-form" class="panel form-panel">
         <h2 data-i18n="help.report.title"></h2>
+        <div id="report-target" class="notice" hidden></div>
         <label for="report-type" data-i18n="help.report.type"></label>
         <select id="report-type" name="type"></select>
         <label for="report-message" data-i18n="help.report.details"></label>
         <textarea id="report-message" name="message" required maxlength="1000" rows="4" data-i18n-placeholder="help.report.detailsPlaceholder"></textarea>
-        <button class="button primary" type="submit" data-i18n="help.report.submit"></button>
-        <p class="small-note" data-i18n="help.report.notSent"></p>
+        <button id="report-submit" class="button primary" type="submit" data-i18n="help.report.submit"></button>
+        <p class="small-note" data-i18n="help.report.privacy"></p>
       </form>
       <div id="report-feedback" class="feedback" role="status" hidden></div>
     </section>
@@ -227,7 +228,7 @@
       <div class="notice"><strong data-i18n="admin.notice.title"></strong><p data-i18n="admin.notice.body"></p></div>
       <div class="stats-grid">
         <article class="stat-card"><span data-i18n="admin.listings"></span><strong id="admin-listing-count">0</strong></article>
-        <article class="stat-card"><span data-i18n="admin.reports"></span><strong id="admin-report-count">0</strong></article>
+        <article class="stat-card"><span data-i18n="admin.reports"></span><strong id="admin-report-count" data-i18n="admin.notConnected"></strong></article>
         <article class="stat-card"><span data-i18n="admin.pending"></span><strong data-i18n="admin.notConnected"></strong></article>
       </div>
       <button class="button secondary full-width" data-go="find" data-i18n="admin.reviewListings"></button>
