@@ -19,7 +19,7 @@
 - [x] Add Playwright with the Pixel 5 device profile and Chromium. Cover the README checklist (see `/test-checklist`), plus back navigation, deep links and offline reload.
 - [ ] CI with GitHub Actions: type-check, build, then Playwright. Deploy every branch to a preview URL on Netlify or Cloudflare Pages.
   - [x] `.github/workflows/ci.yml` and `netlify.toml` added.
-  - [x] Connect the repo in Netlify (owner's account). Production is https://setsetal.netlify.app, built from `main`.
+  - [x] Connect the repo in Netlify (owner's account). Production is https://setsetal.netlify.app, built from `main`. The GitHub repo is public, because Netlify's free plan blocks builds pushed by non-members to private repos.
   - [ ] Confirm the `adlai_changes` branch preview (https://adlai-changes--setsetal.netlify.app) and CI are green. Work stays on the branch until the owner merges to `main`.
 - [x] Update the README's run instructions (`npm i`, `npm run dev`).
 
