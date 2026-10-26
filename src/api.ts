@@ -26,6 +26,29 @@ async function get<T>(path: string): Promise<T> {
   }
 }
 
+// A request to the Supabase project ("rest/v1/…" or "auth/v1/…"), signed in
+// as the collector when a token is given. Throws only for network failures
+// and timeouts; callers read the status.
+export async function call(path: string, init: RequestInit = {}, token?: string): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(`${url}/${path}`, {
+      ...init,
+      headers: {
+        apikey: key ?? "",
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers
+      },
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Ordered by name: never by anything paid (product rule 5).
 export const fetchPublicCollectors = (): Promise<PublicCollectorRow[]> =>
   get("public_collectors?select=id,name,vehicle_type,description,phone,whatsapp,areas,waste_types&order=name.asc");

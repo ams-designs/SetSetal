@@ -15,7 +15,11 @@
   - [x] Seeded in a migration: vehicle, waste and report types, and the `brikama` area.
   - [ ] Brikama neighbourhoods (owner to list), then switch the front end to the tables.
 - [ ] Phone OTP sign-in for collectors (Supabase Auth with an SMS provider). Residents get no sign-in.
-- [ ] Collector flow: submit a listing (multiple areas and waste types, with an explicit consent checkbox that writes `consent_at`), view its status, and edit it.
+  - [x] App side (`src/auth.ts`): code by SMS, session refresh, sign-out, and sign-in ends after 7 days unused (shared phones).
+  - [ ] Switch on the phone provider in the Supabase dashboard, with test numbers for development.
+  - [ ] Choose how codes are sent for the pilot (decision D5): an Android phone as SMS gateway through Supabase's Send SMS hook, or a paid provider.
+  - [ ] **Before launch:** set Supabase Auth SMS rate limits and turn on a captcha for `/otp` (needs `captcha_token` in the request), so nobody can run up the SMS bill.
+- [x] Collector flow: submit a listing (multiple areas and waste types, with an explicit consent checkbox that writes `consent_at`), view its status, and edit it. `src/join.ts` and `save_my_listing()`; one listing per collector; the form's areas come from the database.
 - [ ] Admin screen behind sign-in and the admin role:
   - [ ] review queue
   - [ ] approve, reject or suspend, with a required reason

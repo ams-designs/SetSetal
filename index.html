@@ -144,22 +144,50 @@
       </div>
       <p class="intro" data-i18n="join.intro"></p>
 
-      <form id="registration-form" class="panel form-panel">
+      <p id="join-loading" class="muted" hidden data-i18n="join.loading"></p>
+
+      <div id="join-signin" class="panel form-panel" hidden>
+        <form id="signin-phone-form">
+          <h2 data-i18n="join.signin.title"></h2>
+          <p data-i18n="join.signin.body"></p>
+          <label for="signin-phone" data-i18n="join.signin.phone"></label>
+          <input id="signin-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" data-i18n-placeholder="join.signin.phonePlaceholder">
+          <button id="signin-send" class="button primary" type="submit" data-i18n="join.signin.send"></button>
+          <p class="small-note" data-i18n="join.signin.sharedNote"></p>
+        </form>
+        <form id="signin-code-form" hidden>
+          <h2 data-i18n="join.signin.codeTitle"></h2>
+          <p id="signin-code-sent"></p>
+          <label for="signin-code" data-i18n="join.signin.code"></label>
+          <input id="signin-code" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6">
+          <button id="signin-verify" class="button primary" type="submit" data-i18n="join.signin.verify"></button>
+          <button id="signin-change" class="text-button" type="button" data-i18n="join.signin.change"></button>
+        </form>
+        <div id="signin-feedback" class="feedback" role="status" hidden></div>
+      </div>
+
+      <div id="my-listing" hidden></div>
+
+      <form id="registration-form" class="panel form-panel" hidden>
         <label for="provider-name"><span data-i18n="join.name"></span> <span class="required">*</span></label>
-        <input id="provider-name" name="name" autocomplete="organization" required maxlength="80" data-i18n-placeholder="join.namePlaceholder">
+        <input id="provider-name" name="name" autocomplete="organization" required minlength="2" maxlength="80" data-i18n-placeholder="join.namePlaceholder">
 
         <label for="provider-phone"><span data-i18n="join.phone"></span> <span class="required">*</span></label>
         <input id="provider-phone" name="phone" type="tel" autocomplete="tel" required maxlength="25" data-i18n-placeholder="join.phonePlaceholder">
+
+        <label for="provider-whatsapp" data-i18n="join.whatsapp"></label>
+        <input id="provider-whatsapp" name="whatsapp" type="tel" maxlength="25" data-i18n-placeholder="join.whatsappPlaceholder">
 
         <label for="provider-vehicle"><span data-i18n="join.vehicle"></span> <span class="required">*</span></label>
         <select id="provider-vehicle" name="vehicle" required>
           <option value="" data-i18n="join.vehicleChoose"></option>
         </select>
 
-        <label for="provider-area"><span data-i18n="join.area"></span> <span class="required">*</span></label>
-        <select id="provider-area" name="area" required>
-          <option value="" data-i18n="join.areaChoose"></option>
-        </select>
+        <fieldset id="provider-areas" class="checkbox-group">
+          <legend><span data-i18n="join.areas.legend"></span> <span class="required">*</span></legend>
+          <div id="provider-area-options"></div>
+          <p id="provider-areas-error" class="field-error" role="alert" hidden data-i18n="join.areas.error"></p>
+        </fieldset>
 
         <fieldset id="provider-waste" class="checkbox-group">
           <legend><span data-i18n="join.waste.legend"></span> <span class="required">*</span></legend>
@@ -168,17 +196,22 @@
         </fieldset>
 
         <label for="provider-description" data-i18n="join.description"></label>
-        <textarea id="provider-description" name="description" rows="3" maxlength="400" data-i18n-placeholder="join.descriptionPlaceholder"></textarea>
+        <textarea id="provider-description" name="description" rows="3" maxlength="500" data-i18n-placeholder="join.descriptionPlaceholder"></textarea>
 
         <label class="checkbox-row">
-          <input type="checkbox" name="consent" required>
-          <span><span data-i18n="join.consent"></span> <strong data-i18n="join.consentNotPublished"></strong></span>
+          <input id="provider-consent" type="checkbox" name="consent">
+          <span data-i18n="join.consent"></span>
         </label>
+        <p class="small-note" data-i18n="join.consentNote"></p>
 
         <button class="button primary" type="submit" data-i18n="join.submit"></button>
-        <p class="small-note" data-i18n="join.notSent"></p>
+        <p class="small-note" data-i18n="join.reviewNote"></p>
       </form>
       <div id="registration-feedback" class="feedback" role="status" hidden></div>
+      <div id="signed-in" hidden>
+        <p id="signed-in-as" class="small-note"></p>
+        <button id="sign-out" class="button secondary full-width" type="button" data-i18n="join.signOut"></button>
+      </div>
     </section>
 
     <section class="screen" id="preview" aria-labelledby="preview-title" hidden>
@@ -189,8 +222,9 @@
         <div><p class="eyebrow" data-i18n="preview.eyebrow"></p><h1 id="preview-title" data-i18n="preview.title"></h1></div>
       </div>
       <div id="preview-content"></div>
-      <button class="button secondary full-width" data-go="join" data-i18n="preview.edit"></button>
-      <button class="button primary full-width" id="finish-preview" type="button" data-i18n="preview.finish"></button>
+      <div id="preview-feedback" class="feedback" role="status" hidden></div>
+      <button class="button secondary full-width" data-back data-i18n="preview.edit"></button>
+      <button class="button primary full-width" id="submit-listing" type="button" data-i18n="preview.submit"></button>
     </section>
 
     <section class="screen" id="help" aria-labelledby="help-title" hidden>

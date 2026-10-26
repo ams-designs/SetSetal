@@ -14,6 +14,7 @@ Vite + TypeScript with vanilla modules, no UI framework. `npm run dev` for devel
 | `index.html` | All 7 screens as `<section class="screen" id="...">`: home, find, profile, join, preview, help, admin. No literal text: elements carry `data-i18n` / `data-i18n-aria-label` / `data-i18n-placeholder` keys |
 | `src/router.ts` | Hash routes (`#/`, `#/find`, `#/collector/:id`, `#/join`, `#/join/preview`, `#/help`, `#/admin`), `go`, `back`, popstate. Browser history is the only back stack |
 | `src/listings.ts`, `src/forms.ts`, `src/install.ts`, `src/ui.ts` | Listings and filters; registration, preview and feedback; install button; `$`, `escapeHTML`, `toast` |
+| `src/auth.ts`, `src/collector.ts`, `src/join.ts` | Collector sign-in by SMS code (plain fetch to Supabase Auth); their own listing and `save_my_listing()`; the Join screen (sign-in, form, preview, status) |
 | `src/api.ts`, `.env` | Reads approved listings from Supabase with plain `fetch` and the publishable key. Real listings replace all demos once one exists; never mixed. `.env` holds public values only; secrets never go in the repo. `src/types/db.ts` is generated |
 | `src/data/lookups.ts` | The single source for areas, vehicles, waste and report types (ids; labels come from i18n) |
 | `src/i18n/` | `en.json` is the source of truth; `wo.json`/`mnk.json` are stubs; `review-status.json` tracks native review; `t(key, vars)` |

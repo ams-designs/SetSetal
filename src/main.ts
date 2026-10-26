@@ -1,6 +1,7 @@
 import "./styles.css";
 import { detectLocale, setLocale, t, translatePage, type MessageKey } from "./i18n";
-import { bindForms, hasDraft, populateForms, renderPreview, setReportTarget, updateAdminCounts } from "./forms";
+import { bindForms, populateForms, setReportTarget, updateAdminCounts } from "./forms";
+import { bindJoin, hasDraft, populateJoin, renderJoin, renderPreview } from "./join";
 import { bindInstall } from "./install";
 import {
   clearFilters, findCollector, listingsPending, loadListings, nameOf, populateFilters, renderCollectors, renderProfile,
@@ -24,6 +25,7 @@ function resolve(route: Route): Route {
 function beforeShow(route: Route): void {
   if (route.screen === "profile") renderProfile(route.id);
   if (route.screen === "preview") renderPreview();
+  if (route.screen === "join") void renderJoin();
 }
 
 // Runs whenever the listings change: from the cache, then from the server.
@@ -94,8 +96,10 @@ function init(): void {
   translatePage();
   populateFilters();
   populateForms();
+  populateJoin();
   bindNavigation();
   bindForms();
+  bindJoin();
   bindInstall();
   startRouter({ resolve, beforeShow });
   renderCollectors();
