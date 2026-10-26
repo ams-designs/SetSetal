@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Set BASE_URL to test a deployed build (for example a Netlify preview) instead
+// of a local one.
+const baseURL = process.env.BASE_URL ?? "http://localhost:4173/";
+
 export default defineConfig({
   testDir: "tests/e2e",
   fullyParallel: true,
@@ -7,7 +11,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
-    baseURL: "http://localhost:4173/",
+    baseURL,
     trace: "retain-on-failure"
   },
   projects: [
@@ -22,7 +26,7 @@ export default defineConfig({
   ],
   // Tests run against the production build, because the service worker only
   // exists there.
-  webServer: {
+  webServer: process.env.BASE_URL ? undefined : {
     command: "npm run build && npm run preview",
     url: "http://localhost:4173/",
     reuseExistingServer: !process.env.CI,

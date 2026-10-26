@@ -20,7 +20,8 @@
 - [ ] CI with GitHub Actions: type-check, build, then Playwright. Deploy every branch to a preview URL on Netlify or Cloudflare Pages.
   - [x] `.github/workflows/ci.yml` and `netlify.toml` added.
   - [x] Connect the repo in Netlify (owner's account). Production is https://setsetal.netlify.app, built from `main`. The GitHub repo is public, because Netlify's free plan blocks builds pushed by non-members to private repos.
-  - [ ] Confirm the `adlai_changes` branch preview (https://adlai-changes--setsetal.netlify.app) and CI are green. Work stays on the branch until the owner merges to `main`.
+  - [x] Confirm the `adlai_changes` branch preview (https://adlai-changes--setsetal.netlify.app) and CI are green. Previews have visitor protection turned off. `BASE_URL=<preview> npm test` runs the suite against a deployed build.
+  - [ ] Owner merges `adlai_changes` to `main` and production at https://setsetal.netlify.app updates.
 - [x] Update the README's run instructions (`npm i`, `npm run dev`).
 
 ## Exit criterion
