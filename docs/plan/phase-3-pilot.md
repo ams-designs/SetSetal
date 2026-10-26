@@ -1,11 +1,11 @@
 # Phase 3: Controlled pilot (~4–6 weeks)
 
 **Goal:** residents in the pilot areas reach real collectors, and the complaint process has handled real reports.
-**Blocked by:** decisions D2, D3 and D4 in [decisions.md](decisions.md).
+**Blocked by:** the meaning of "verified" (D2) and decision D4 in [decisions.md](decisions.md).
 
 ## Tasks
 
-- [ ] Choose one or two pilot areas, for example Kanifing and Brikama.
+- [x] Choose the pilot area: Brikama (D3, 26 Oct 2026).
 - [ ] Onboard 10–20 real collectors **in person**, including cart and tricycle operators, and record the verification check described in D2.
 - [ ] Distribute the app as an installable PWA through a link and QR posters, with no app store yet.
 - [ ] Privacy-respecting analytics (Plausible or Umami, with no cookies) tracking these events:
@@ -15,7 +15,7 @@
   - [ ] `listing_marked_wrong`
 - [ ] Write a privacy notice and a data-retention policy, and **have a Gambian legal adviser check them** before onboarding.
 - [ ] Run the complaint-handling procedure on real reports, and log what goes wrong.
-- [ ] Test the Wolof and Mandinka wording with real users.
+- [ ] Test the English wording with real users. Wolof and Mandinka come after the pilot (D3).
 
 ## Exit criterion
 

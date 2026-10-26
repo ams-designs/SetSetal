@@ -40,7 +40,7 @@ These rules make the product trustworthy, so treat them as constraints, not pref
 - **Accessibility:** touch targets of 48×48 px or larger, visible focus, labelled controls, `aria-live` for results and toasts, `aria-current` on the nav, and respect for `prefers-reduced-motion`.
 - **Icons:** use SVG, never emoji. The back chevron path is `m15 18-6-6 6-6`.
 - **Lists:** keep areas, vehicle types and waste types in a single source. Today that's `src/data/lookups.ts`; from Phase 2 it's the database. Don't add another hard-coded copy.
-- **Copy:** use British English, plain and short. From Phase 1 all user-facing text lives in translation files (en first, then Wolof and Mandinka, checked by native speakers).
+- **Copy:** use British English, plain and short. From Phase 1 all user-facing text lives in translation files (en first, then Wolof and Mandinka, checked by native speakers). The pilot runs in English only (D3).
 - **Commits:** keep them small and focused, and tie each one to a task in the active phase file.
 
 ## Claude tooling in this repo
