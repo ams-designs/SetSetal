@@ -6,9 +6,9 @@
 
 ## Tasks
 
-- [ ] Create the Supabase project and set up the CLI locally (`supabase init`, `supabase start`).
+- [x] Create the Supabase project and set up the CLI locally (`supabase init`, `supabase start`).
   - [x] `supabase/` initialised (`config.toml`, migrations, tests).
-  - [ ] Hosted project, or Docker for `supabase start` (needs the owner's account or `sudo`).
+  - [x] Hosted project `SetSetal` (ref `gplmfpglapxicfghlkid`, eu-west-1), owned by the owner's organisation; Adlai is Administrator. All migrations applied and recorded (26 Oct 2026). Docker for `supabase start` is still optional.
 - [x] Write migrations for the schema in [data-model.md](data-model.md), using `/supabase-migration`.
 - [x] RLS: the public sees only approved listings, collectors edit only their own (and can't change `status`), and admins see everything. Write SQL tests for each policy. `npm run test:db` runs them in PGlite (CI too); `supabase test db` runs the same files on a real stack.
 - [ ] Seed `areas`, `waste_types` and `vehicle_types` from the D3 answer (Brikama and its neighbourhoods). The front end reads these tables, so delete the hard-coded lists.
@@ -23,7 +23,7 @@
   - [ ] audit history
 - [ ] Contact buttons (`tel:` and `wa.me/<E.164 number without +>`) appear only when the status is approved and `consent_at` is set, following D1 (both).
 - [ ] Offline report queue: Workbox `BackgroundSyncPlugin` on the reports insert, or a small IndexedDB outbox. Tell the user clearly that the report is queued.
-- [ ] Generate TypeScript types from the schema (`supabase gen types`).
+- [x] Generate TypeScript types from the schema (`supabase gen types`). In `src/types/db.ts`; regenerate after each migration.
 - [ ] Keep the "Demonstration listing" labels for any remaining sample data, and never mix samples with real listings.
 
 ## Exit criterion

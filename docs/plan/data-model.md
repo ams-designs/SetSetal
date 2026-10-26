@@ -1,6 +1,6 @@
 # Data model (Supabase, Phase 2)
 
-The migrations in `supabase/migrations/` are the source of truth; this page explains them. Update both in the same change.
+The migrations in `supabase/migrations/` are the source of truth; this page explains them. Update both in the same change. The hosted project is `gplmfpglapxicfghlkid`; its migration history matches the file names.
 
 ## Tables
 
@@ -14,7 +14,7 @@ The migrations in `supabase/migrations/` are the source of truth; this page expl
 | `collector_waste_types` | Many-to-many link (`collector_id`, `waste_type_id`) |
 | `reports` | `type`, `message`, an optional `collector_id`, `status` (`open`, `resolved`, `dismissed`), `resolution_note`, `resolved_by`, `resolved_at`, `created_at`. **Never stores a resident address or identity** |
 | `audit_log` | `collector_id`, `actor`, `from_status`, `to_status`, `reason`, `created_at`. Every new listing and every status change writes one |
-| `admins` | The user IDs that hold the admin role. Added from the dashboard or SQL editor only |
+| `admins` | The user IDs that hold the admin role. Added from the dashboard or SQL editor only. Policies check it through `private.is_admin()`, which isn't exposed through the API |
 
 There is no `verified` status yet. D2 says an admin approves listings but doesn't define what "verified" means, so listings show as approved only. Add the status in a new migration once the check is defined and recorded.
 
