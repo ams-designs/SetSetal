@@ -1,7 +1,24 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, expect, type BrowserContext, type Page } from "@playwright/test";
 
-// Every test fails on a console error or an uncaught exception.
-export const test = base.extend<{ consoleErrors: string[] }>({
+const API = /\/rest\/v1\//;
+
+// Replaces the Supabase REST API for this test. Context routes also catch
+// requests made through the service worker; the latest route wins.
+export async function mockListings(context: BrowserContext, rows: object[]) {
+  await context.route(API, (route) => route.fulfill({ json: rows }));
+}
+
+// Every test fails on a console error or an uncaught exception, and never
+// reaches the live database: the API answers with no real listings unless a
+// test calls mockListings.
+export const test = base.extend<{ consoleErrors: string[]; api: void }>({
+  api: [
+    async ({ context }, use) => {
+      await mockListings(context, []);
+      await use();
+    },
+    { auto: true }
+  ],
   consoleErrors: [
     async ({ page }, use) => {
       const errors: string[] = [];

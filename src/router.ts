@@ -98,6 +98,15 @@ export function go(screen: ScreenId, id: string | null = null): void {
   show(route);
 }
 
+export const currentRoute = (): Route => current;
+
+// Swaps the current screen without adding history, for data that turns out to
+// be missing once it has loaded.
+export function redirect(route: Route): void {
+  replace(route, currentEntry()?.depth ?? 0);
+  show(route);
+}
+
 export function back(): void {
   if ((currentEntry()?.depth ?? 0) > 0) {
     history.back(); // popstate shows the previous screen

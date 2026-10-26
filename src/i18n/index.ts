@@ -59,10 +59,14 @@ export function t(key: MessageKey, vars: Record<string, string | number> = {}): 
   );
 }
 
-export function plural(base: "find.count", count: number): string {
+export function plural(base: "find.count" | "find.countReal", count: number): string {
   // Intl falls back to a default rule set for locales it does not know.
   const form = new Intl.PluralRules(locale).select(count) === "one" ? "one" : "other";
   return t(`${base}.${form}` as MessageKey, { count });
+}
+
+export function formatDate(time: number): string {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : locale, { day: "numeric", month: "short" }).format(time);
 }
 
 // Static markup names its text with data-i18n attributes:

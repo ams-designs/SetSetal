@@ -14,13 +14,14 @@ Vite + TypeScript with vanilla modules, no UI framework. `npm run dev` for devel
 | `index.html` | All 7 screens as `<section class="screen" id="...">`: home, find, profile, join, preview, help, admin. No literal text: elements carry `data-i18n` / `data-i18n-aria-label` / `data-i18n-placeholder` keys |
 | `src/router.ts` | Hash routes (`#/`, `#/find`, `#/collector/:id`, `#/join`, `#/join/preview`, `#/help`, `#/admin`), `go`, `back`, popstate. Browser history is the only back stack |
 | `src/listings.ts`, `src/forms.ts`, `src/install.ts`, `src/ui.ts` | Listings and filters; registration, preview and feedback; install button; `$`, `escapeHTML`, `toast` |
+| `src/api.ts`, `.env` | Reads approved listings from Supabase with plain `fetch` and the publishable key. Real listings replace all demos once one exists; never mixed. `.env` holds public values only; secrets never go in the repo. `src/types/db.ts` is generated |
 | `src/data/lookups.ts` | The single source for areas, vehicles, waste and report types (ids; labels come from i18n) |
 | `src/i18n/` | `en.json` is the source of truth; `wo.json`/`mnk.json` are stubs; `review-status.json` tracks native review; `t(key, vars)` |
 | `src/styles.css` | Design tokens on `:root` (`--green`, `--ivory`, …) and the layout |
 | `vite.config.ts` | Manifest and `vite-plugin-pwa` (Workbox `generateSW`). Cache versioning is automatic |
 | `public/` | `icon.svg` and PNG icons |
-| `tests/e2e/` | Playwright specs (Pixel 5). Every test fails on a console error |
-| `supabase/` | Phase 2 backend: `migrations/` (schema, RLS, lookup seeds) and `tests/` (pgTAP). Not wired to the front end yet |
+| `tests/e2e/` | Playwright specs (Pixel 5). Every test fails on a console error, and every Supabase call is mocked (`mockListings`), so tests never touch the live database |
+| `supabase/` | Phase 2 backend: `migrations/` (schema, RLS, lookup seeds) and `tests/` (pgTAP). Hosted project `gplmfpglapxicfghlkid` |
 | `scripts/test-db.mjs` | `npm run test:db`: applies the migrations and runs the pgTAP tests in PGlite, with no Docker. `scripts/db-test/` stubs the Supabase roles and a pgTAP subset |
 
 The target stack is in [docs/plan/README.md](docs/plan/README.md#target-stack).

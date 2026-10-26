@@ -1,16 +1,34 @@
-import { t, plural, type MessageKey } from "./i18n";
+import { t, plural, formatDate, type MessageKey } from "./i18n";
 import {
   AREAS, OTHER_AREA, VEHICLES, WASTE_TYPES,
-  areaLabel, vehicleLabel, wasteLabel,
+  areaLabel, isVehicle, isWaste, vehicleLabel, wasteLabel,
   type AreaId, type VehicleId, type WasteId
 } from "./data/lookups";
+import { backendConfigured, fetchPublicCollectors, type PublicCollectorRow } from "./api";
 import { $, escapeHTML } from "./ui";
 
-export interface Collector {
+interface Collector {
   id: string;
   vehicle: VehicleId;
   area: AreaId;
   waste: WasteId[];
+}
+
+// What the Find and profile screens show: either every demonstration listing
+// or every real one, never a mix (product rule 1).
+export interface Listing {
+  id: string;
+  demo: boolean;
+  vehicle: VehicleId;
+  areas: string[];
+  waste: WasteId[];
+  // Real listings only. Demo text comes from the translation files.
+  name: string;
+  description: string;
+  // Present only when the listing is approved and the collector consented;
+  // the server leaves them out otherwise (product rule 2).
+  phone: string | null;
+  whatsapp: string | null;
 }
 
 // These are demonstration records, not real or verified businesses. Every
@@ -94,13 +112,119 @@ const vehicleSvg: Record<VehicleId, string> = {
       </svg>`
 };
 
-const demoName = (collector: Collector): string => t(`demo.${collector.id}.name` as MessageKey);
-const demoDescription = (collector: Collector): string => t(`demo.${collector.id}.description` as MessageKey);
-
 export const iconFor = (vehicle: VehicleId): string => vehicleSvg[vehicle];
 
-export const findCollector = (id: string | null): Collector | undefined =>
-  sampleCollectors.find((collector) => collector.id === id);
+const E164 = /^\+[1-9][0-9]{6,14}$/;
+const CACHE_KEY = "setsetal.listings.v2";
+const HOUR = 60 * 60 * 1000;
+// Saved listings expire, so a suspension or withdrawn consent reaches phones
+// that stay offline: contact details after 48 hours, everything after 7 days.
+const CONTACT_MAX_AGE = 48 * HOUR;
+const CACHE_MAX_AGE = 7 * 24 * HOUR;
+
+interface SavedListings {
+  savedAt: number;
+  rows: PublicCollectorRow[];
+}
+
+const demoListings = (): Listing[] => sampleCollectors.map((collector) => ({
+  id: collector.id,
+  demo: true,
+  vehicle: collector.vehicle,
+  areas: [collector.area],
+  waste: collector.waste,
+  name: "",
+  description: "",
+  phone: null,
+  whatsapp: null
+}));
+
+function fromRow(row: PublicCollectorRow): Listing | null {
+  if (!row.id || !row.name || !row.vehicle_type || !isVehicle(row.vehicle_type)) return null;
+  return {
+    id: row.id,
+    demo: false,
+    vehicle: row.vehicle_type,
+    areas: row.areas ?? [],
+    waste: (row.waste_types ?? []).filter(isWaste),
+    name: row.name,
+    description: row.description ?? "",
+    phone: row.phone && E164.test(row.phone) ? row.phone : null,
+    whatsapp: row.whatsapp && E164.test(row.whatsapp) ? row.whatsapp : null
+  };
+}
+
+let listings: Listing[] = demoListings();
+// True until the first answer from the server (or the cache) arrives.
+let pending = backendConfigured;
+// When the listings on screen came from the cache rather than the server.
+let savedAt: number | null = null;
+
+export const listingsPending = (): boolean => pending;
+export const listingsSavedAt = (): number | null => savedAt;
+
+function useRows(rows: PublicCollectorRow[], options: { withoutContacts?: boolean } = {}): void {
+  const real = rows.map(fromRow).filter((listing): listing is Listing => listing !== null);
+  if (options.withoutContacts) real.forEach((listing) => { listing.phone = null; listing.whatsapp = null; });
+  listings = real.length ? real : demoListings();
+  pending = false;
+}
+
+function readCache(): SavedListings | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null") as SavedListings | null;
+    if (!saved || typeof saved.savedAt !== "number" || !Array.isArray(saved.rows)) return null;
+    return Date.now() - saved.savedAt < CACHE_MAX_AGE ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(rows: PublicCollectorRow[]): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), rows } satisfies SavedListings));
+  } catch {
+    // Storage can be full or blocked; the next visit fetches again.
+  }
+}
+
+// Shows the last saved listings straight away, then asks the server. Offline,
+// or if the request fails, whatever was shown stays: saved real listings, or
+// the labelled demonstrations.
+export async function loadListings(onChange: () => void): Promise<void> {
+  if (!backendConfigured) return;
+  const cached = readCache();
+  if (cached) {
+    useRows(cached.rows, { withoutContacts: Date.now() - cached.savedAt >= CONTACT_MAX_AGE });
+    savedAt = cached.savedAt;
+    onChange();
+  }
+  if (!navigator.onLine) {
+    pending = false;
+    onChange();
+    return;
+  }
+  try {
+    const rows = await fetchPublicCollectors();
+    writeCache(rows);
+    useRows(rows);
+    savedAt = null;
+  } catch {
+    pending = false;
+  }
+  onChange();
+}
+
+export const showingDemos = (): boolean => listings.some((listing) => listing.demo);
+
+export const findCollector = (id: string | null): Listing | undefined =>
+  listings.find((listing) => listing.id === id);
+
+const nameOf = (listing: Listing): string =>
+  listing.demo ? t(`demo.${listing.id}.name` as MessageKey) : listing.name;
+const descriptionOf = (listing: Listing): string =>
+  listing.demo ? t(`demo.${listing.id}.description` as MessageKey) : listing.description;
+const areaList = (areas: readonly string[]): string => areas.map(areaLabel).join(", ");
 
 const wasteList = (waste: readonly WasteId[]): string => waste.map(wasteLabel).join(", ");
 
@@ -127,30 +251,33 @@ interface Filters {
   waste: string;
 }
 
-function matchesFilters(collector: Collector, filters: Filters): boolean {
-  return (filters.area === "all" || collector.area === filters.area) &&
-    (filters.vehicle === "all" || collector.vehicle === filters.vehicle) &&
-    (filters.waste === "all" || (collector.waste as string[]).includes(filters.waste));
+function matchesFilters(listing: Listing, filters: Filters): boolean {
+  return (filters.area === "all" || listing.areas.includes(filters.area)) &&
+    (filters.vehicle === "all" || listing.vehicle === filters.vehicle) &&
+    (filters.waste === "all" || (listing.waste as string[]).includes(filters.waste));
 }
 
-function collectorCard(collector: Collector): string {
+const demoLabel = (listing: Listing): string =>
+  listing.demo ? `<span class="demo-label">${escapeHTML(t("listing.demoLabel"))}</span>` : "";
+
+function collectorCard(listing: Listing): string {
   return `
       <article class="collector-card">
-        <div class="vehicle-art">${iconFor(collector.vehicle)}</div>
+        <div class="vehicle-art">${iconFor(listing.vehicle)}</div>
         <div>
-          <h3>${escapeHTML(demoName(collector))}</h3>
-          <p>${escapeHTML(vehicleLabel(collector.vehicle))} · ${escapeHTML(areaLabel(collector.area))}</p>
-          <p>${escapeHTML(t("listing.wasteTypes", { types: wasteList(collector.waste) }))}</p>
-          <span class="demo-label">${escapeHTML(t("listing.demoLabel"))}</span>
+          <h3>${escapeHTML(nameOf(listing))}</h3>
+          <p>${escapeHTML(vehicleLabel(listing.vehicle))} · ${escapeHTML(areaList(listing.areas))}</p>
+          <p>${escapeHTML(t("listing.wasteTypes", { types: wasteList(listing.waste) }))}</p>
+          ${demoLabel(listing)}
           <div class="card-actions">
             <button class="button secondary" type="button"
-              data-profile="${escapeHTML(collector.id)}">${escapeHTML(t("listing.viewDetails"))}</button>
+              data-profile="${escapeHTML(listing.id)}">${escapeHTML(t("listing.viewDetails"))}</button>
           </div>
         </div>
       </article>`;
 }
 
-function emptyState(otherArea: boolean): string {
+function emptyState(otherArea: boolean, demo: boolean): string {
   if (otherArea) {
     return `<div class="empty-state">
           <h3>${escapeHTML(t("find.empty.otherArea.title"))}</h3>
@@ -159,7 +286,7 @@ function emptyState(otherArea: boolean): string {
         </div>`;
   }
   return `<div class="empty-state">
-          <h3>${escapeHTML(t("find.empty.title"))}</h3>
+          <h3>${escapeHTML(t(demo ? "find.empty.title" : "find.empty.titleReal"))}</h3>
           <p>${escapeHTML(t("find.empty.body"))}</p>
         </div>`;
 }
@@ -182,17 +309,64 @@ export function renderCollectors(): void {
     vehicle: $<HTMLSelectElement>("#vehicle-filter").value,
     waste: $<HTMLSelectElement>("#waste-type").value
   };
-  const results = sampleCollectors.filter((collector) => matchesFilters(collector, filters));
+  if (pending) {
+    $("#results-count").textContent = t("find.loading");
+    $("#collector-results").innerHTML = "";
+    return;
+  }
+  const results = listings.filter((listing) => matchesFilters(listing, filters));
+  const demo = listings.some((listing) => listing.demo);
 
-  $("#results-count").textContent = plural("find.count", results.length);
+  const count = plural(demo ? "find.count" : "find.countReal", results.length);
+  $("#results-count").textContent = savedAt ? `${count} · ${savedNote()}` : count;
   $("#collector-results").innerHTML = results.length
     ? results.map(collectorCard).join("")
-    : emptyState(filters.area === OTHER_AREA);
+    : emptyState(filters.area === OTHER_AREA, demo);
 }
+
+const savedNote = (): string => t("listing.savedNote", { date: formatDate(savedAt ?? Date.now()) });
+
+// wa.me takes the number without the leading +.
+function contactSection(listing: Listing): string {
+  if (listing.demo) {
+    return `
+        <div class="notice">
+          <strong>${escapeHTML(t("profile.noContact.title"))}</strong>
+          <p>${escapeHTML(t("profile.noContact.body"))}</p>
+        </div>`;
+  }
+  if (!listing.phone && !listing.whatsapp) {
+    return `
+        <div class="notice">
+          <strong>${escapeHTML(t("profile.noContactReal.title"))}</strong>
+          <p>${escapeHTML(t("profile.noContactReal.body"))}</p>
+        </div>`;
+  }
+  const name = nameOf(listing);
+  const call = listing.phone ? `
+          <a class="button" href="tel:${escapeHTML(listing.phone)}"
+            aria-label="${escapeHTML(t("profile.callLabel", { name }))}">${escapeHTML(t("profile.call"))}</a>` : "";
+  const whatsapp = listing.whatsapp ? `
+          <a class="button secondary" href="https://wa.me/${escapeHTML(listing.whatsapp.slice(1))}"
+            target="_blank" rel="noopener"
+            aria-label="${escapeHTML(t("profile.whatsappLabel", { name }))}">${escapeHTML(t("profile.whatsapp"))}</a>` : "";
+  return `
+        <div class="card-actions contact-actions">${call}${whatsapp}
+        </div>
+        <p class="small-note">${escapeHTML(t("profile.contactNote"))}</p>`;
+}
+
+const savedLine = (listing: Listing): string =>
+  savedAt && !listing.demo ? `<p class="small-note">${escapeHTML(savedNote())}</p>` : "";
 
 export function renderProfile(id: string | null): void {
   const collector = findCollector(id);
-  if (!collector) return;
+  if (!collector) {
+    $("#profile-content").innerHTML = pending
+      ? `<p class="muted">${escapeHTML(t("profile.loading"))}</p>`
+      : "";
+    return;
+  }
 
   const row = (label: string, value: string) => `
         <div class="detail-row">
@@ -205,18 +379,15 @@ export function renderProfile(id: string | null): void {
         <div class="profile-title-row">
           <div class="vehicle-art">${iconFor(collector.vehicle)}</div>
           <div>
-            <h2>${escapeHTML(demoName(collector))}</h2>
-            <span class="demo-label">${escapeHTML(t("listing.demoLabel"))}</span>
+            <h2>${escapeHTML(nameOf(collector))}</h2>
+            ${demoLabel(collector)}
           </div>
         </div>${
           row(t("profile.vehicle"), vehicleLabel(collector.vehicle)) +
-          row(t("profile.area"), areaLabel(collector.area)) +
+          row(t("profile.area"), areaList(collector.areas)) +
           row(t("profile.waste"), wasteList(collector.waste)) +
-          row(t("profile.about"), demoDescription(collector))}
-        <div class="notice">
-          <strong>${escapeHTML(t("profile.noContact.title"))}</strong>
-          <p>${escapeHTML(t("profile.noContact.body"))}</p>
-        </div>
+          (descriptionOf(collector) ? row(t("profile.about"), descriptionOf(collector)) : "")}${
+          contactSection(collector)}${savedLine(collector)}
       </article>
       <button class="button secondary full-width" data-go="find">${escapeHTML(t("profile.allListings"))}</button>`;
 }
