@@ -394,6 +394,20 @@ export type Database = {
     }
     Functions: {
       owner_edit_reason: { Args: never; Returns: string }
+      save_my_listing: {
+        Args: {
+          p_areas: string[]
+          p_consent: boolean
+          p_description: string
+          p_id: string
+          p_name: string
+          p_phone: string
+          p_vehicle_type: string
+          p_waste_types: string[]
+          p_whatsapp: string
+        }
+        Returns: Json
+      }
       set_collector_status: {
         Args: {
           p_collector: string
