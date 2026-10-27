@@ -4,20 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#147D59">
-  <meta name="description" content="Find local waste collection services and help keep Gambian communities clean.">
-  <title>SetSetal — Cleaner communities</title>
+  <meta name="description" data-i18n-content="app.description" content="">
+  <title data-i18n="app.title">SetSetal</title>
 
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css">
-  <script src="app.js" defer></script>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <!-- All visible text comes from src/i18n/<locale>.json through data-i18n keys. -->
+  <a class="skip-link" href="#main" data-i18n="app.skipLink"></a>
 
   <header class="topbar">
-    <a class="brand" href="#home" aria-label="SetSetal home" data-go="home">
+    <a class="brand" href="#/" data-i18n-aria-label="app.homeLink" data-go="home">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 40 40">
           <path d="M20 5 26 8 23 14 17 14 14 9Z"/>
@@ -29,7 +28,7 @@
       </span>
       <span>SetSetal</span>
     </a>
-    <button class="icon-button" id="help-button" type="button" aria-label="Open help">
+    <button class="icon-button" id="help-button" type="button" data-i18n-aria-label="app.openHelp">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/>
         <path d="M9.7 9a2.4 2.4 0 1 1 4.3 1.5c-1.2 1.1-2 1.4-2 3"/>
@@ -41,9 +40,9 @@
   <main id="main" class="app-main">
     <section class="screen active" id="home" aria-labelledby="home-title">
       <div class="hero">
-        <p class="eyebrow">A cleaner Gambia starts here</p>
-        <h1 id="home-title">Find the right waste collector near you.</h1>
-        <p class="intro">Connect with local collection services in your area. Choose the service that suits your needs.</p>
+        <p class="eyebrow" data-i18n="home.eyebrow"></p>
+        <h1 id="home-title" data-i18n="home.title"></h1>
+        <p class="intro" data-i18n="home.intro"></p>
         <div class="hero-art" aria-hidden="true">
           <svg viewBox="0 0 340 150">
             <path d="M0 125 Q80 95 155 123 T340 116 V150 H0Z" fill="#DDECE1"/>
@@ -62,8 +61,9 @@
           </svg>
         </div>
         <div class="hero-actions">
-          <button class="button primary" data-go="find">Find a collector</button>
-          <button class="button secondary" data-go="join">Register as a collector</button>
+          <button class="button primary" data-go="find" data-i18n="home.findCta"></button>
+          <button class="button secondary" data-go="join" data-i18n="home.joinCta"></button>
+          <button id="install-button" class="button secondary" type="button" hidden data-i18n="install.button"></button>
         </div>
       </div>
 
@@ -72,218 +72,218 @@
           <svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6Z"/><path d="m8 12 2.5 2.5L16 9"/></svg>
         </span>
         <div>
-          <strong>Local services, clearer choices</strong>
-          <p>Compare service areas and contact collectors directly.</p>
+          <strong data-i18n="home.trust.title"></strong>
+          <p data-i18n="home.trust.body"></p>
         </div>
       </div>
 
       <div class="section-heading">
         <div>
-          <p class="eyebrow">How it works</p>
-          <h2>Three simple steps</h2>
+          <p class="eyebrow" data-i18n="home.steps.eyebrow"></p>
+          <h2 data-i18n="home.steps.title"></h2>
         </div>
       </div>
       <div class="steps-grid">
-        <article class="step-card"><span>01</span><h3>Choose your area</h3><p>Tell us where collection is needed.</p></article>
-        <article class="step-card"><span>02</span><h3>Compare services</h3><p>Explore vehicle types and service details.</p></article>
-        <article class="step-card"><span>03</span><h3>Contact directly</h3><p>Discuss price and pickup arrangements.</p></article>
+        <article class="step-card"><span>01</span><h3 data-i18n="home.steps.1.title"></h3><p data-i18n="home.steps.1.body"></p></article>
+        <article class="step-card"><span>02</span><h3 data-i18n="home.steps.2.title"></h3><p data-i18n="home.steps.2.body"></p></article>
+        <article class="step-card"><span>03</span><h3 data-i18n="home.steps.3.title"></h3><p data-i18n="home.steps.3.body"></p></article>
       </div>
     </section>
 
     <section class="screen" id="find" aria-labelledby="find-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-go="home" aria-label="Back to home">
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow">Resident service</p><h1 id="find-title">Find a collector</h1></div>
+        <div><p class="eyebrow" data-i18n="find.eyebrow"></p><h1 id="find-title" data-i18n="find.title"></h1></div>
       </div>
 
       <form id="search-form" class="panel filter-panel">
-        <label for="area">Your area</label>
+        <label for="area" data-i18n="find.area"></label>
         <select id="area" name="area">
-          <option value="All areas">All areas</option>
-          <option>Banjul</option>
-          <option>Bakau</option>
-          <option>Kanifing</option>
-          <option>Serrekunda</option>
-          <option>Brikama</option>
-          <option>Other / not listed</option>
+          <option value="all" data-i18n="find.areaAll"></option>
         </select>
 
-        <label for="vehicle-filter">Collection vehicle</label>
+        <label for="vehicle-filter" data-i18n="find.vehicle"></label>
         <select id="vehicle-filter" name="vehicle">
-          <option value="all">All vehicle types</option>
-          <option value="Municipal truck">Municipal truck</option>
-          <option value="Private truck">Private truck</option>
-          <option value="Small car or van">Small car or van</option>
-          <option value="Tricycle">Tricycle</option>
-          <option value="Donkey cart">Donkey cart</option>
-          <option value="Horse cart">Horse cart</option>
+          <option value="all" data-i18n="find.vehicleAll"></option>
         </select>
 
-        <label for="waste-type">Waste type</label>
+        <label for="waste-type" data-i18n="find.waste"></label>
         <select id="waste-type" name="waste">
-          <option value="all">Any household waste</option>
-          <option>Household bags</option>
-          <option>Garden waste</option>
-          <option>Bulky items</option>
-          <option>Recyclables</option>
-          <option>Business waste</option>
+          <option value="all" data-i18n="find.wasteAll"></option>
         </select>
 
-        <button class="button primary" type="submit">Show matching services</button>
-        <p class="small-note">Location is selected manually. This prototype does not track your GPS location.</p>
+        <button class="button primary" type="submit" data-i18n="find.submit"></button>
+        <p class="small-note" data-i18n="find.locationNote"></p>
       </form>
 
       <div class="section-heading results-heading">
-        <div><h2>Available listings</h2><p id="results-count" class="muted" aria-live="polite"></p></div>
-        <button id="clear-filters" class="text-button" type="button">Clear filters</button>
+        <div><h2 data-i18n="find.resultsTitle"></h2><p id="results-count" class="muted" aria-live="polite"></p></div>
+        <button id="clear-filters" class="text-button" type="button" data-i18n="find.clear"></button>
       </div>
-      <div id="collector-results" class="collector-list"></div>
+      <div id="collector-results" class="collector-list" aria-live="polite"></div>
     </section>
 
     <section class="screen" id="profile" aria-labelledby="profile-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-back aria-label="Go back">
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow">Service details</p><h1 id="profile-title">Collector profile</h1></div>
+        <div><p class="eyebrow" data-i18n="profile.eyebrow"></p><h1 id="profile-title" data-i18n="profile.title"></h1></div>
       </div>
       <div id="profile-content"></div>
     </section>
 
     <section class="screen" id="join" aria-labelledby="join-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-go="home" aria-label="Back to home">
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow">For collection providers</p><h1 id="join-title">Register your service</h1></div>
+        <div><p class="eyebrow" data-i18n="join.eyebrow"></p><h1 id="join-title" data-i18n="join.title"></h1></div>
       </div>
-      <p class="intro">Tell residents what you collect, which areas you serve, and how they can contact you.</p>
+      <p class="intro" data-i18n="join.intro"></p>
 
-      <form id="registration-form" class="panel form-panel">
-        <label for="provider-name">Name or business name <span class="required">*</span></label>
-        <input id="provider-name" name="name" autocomplete="organization" required maxlength="80" placeholder="Enter your name">
+      <p id="join-loading" class="muted" hidden data-i18n="join.loading"></p>
 
-        <label for="provider-phone">Contact phone number <span class="required">*</span></label>
-        <input id="provider-phone" name="phone" type="tel" autocomplete="tel" required maxlength="25" placeholder="Enter your phone number">
+      <div id="join-signin" class="panel form-panel" hidden>
+        <form id="signin-phone-form">
+          <h2 data-i18n="join.signin.title"></h2>
+          <p id="signin-admin-note" class="notice" hidden data-i18n="join.signin.adminNote"></p>
+          <p data-i18n="join.signin.body"></p>
+          <label for="signin-phone" data-i18n="join.signin.phone"></label>
+          <input id="signin-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" data-i18n-placeholder="join.signin.phonePlaceholder">
+          <button id="signin-send" class="button primary" type="submit" data-i18n="join.signin.send"></button>
+          <p class="small-note" data-i18n="join.signin.sharedNote"></p>
+        </form>
+        <form id="signin-code-form" hidden>
+          <h2 data-i18n="join.signin.codeTitle"></h2>
+          <p id="signin-code-sent"></p>
+          <label for="signin-code" data-i18n="join.signin.code"></label>
+          <input id="signin-code" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6">
+          <button id="signin-verify" class="button primary" type="submit" data-i18n="join.signin.verify"></button>
+          <button id="signin-change" class="text-button" type="button" data-i18n="join.signin.change"></button>
+        </form>
+        <div id="signin-feedback" class="feedback" role="status" hidden></div>
+      </div>
 
-        <label for="provider-vehicle">Vehicle or collection method <span class="required">*</span></label>
+      <div id="my-listing" hidden></div>
+
+      <form id="registration-form" class="panel form-panel" hidden>
+        <label for="provider-name"><span data-i18n="join.name"></span> <span class="required">*</span></label>
+        <input id="provider-name" name="name" autocomplete="organization" required minlength="2" maxlength="80" data-i18n-placeholder="join.namePlaceholder">
+
+        <label for="provider-phone"><span data-i18n="join.phone"></span> <span class="required">*</span></label>
+        <input id="provider-phone" name="phone" type="tel" autocomplete="tel" required maxlength="25" data-i18n-placeholder="join.phonePlaceholder">
+
+        <label for="provider-whatsapp" data-i18n="join.whatsapp"></label>
+        <input id="provider-whatsapp" name="whatsapp" type="tel" maxlength="25" data-i18n-placeholder="join.whatsappPlaceholder">
+
+        <label for="provider-vehicle"><span data-i18n="join.vehicle"></span> <span class="required">*</span></label>
         <select id="provider-vehicle" name="vehicle" required>
-          <option value="">Choose a vehicle</option>
-          <option>Municipal truck</option>
-          <option>Private truck</option>
-          <option>Small car or van</option>
-          <option>Tricycle</option>
-          <option>Donkey cart</option>
-          <option>Horse cart</option>
+          <option value="" data-i18n="join.vehicleChoose"></option>
         </select>
 
-        <label for="provider-area">Main service area <span class="required">*</span></label>
-        <select id="provider-area" name="area" required>
-          <option value="">Choose an area</option>
-          <option>Banjul</option><option>Bakau</option><option>Kanifing</option>
-          <option>Serrekunda</option><option>Brikama</option><option>Other / not listed</option>
-        </select>
+        <fieldset id="provider-areas" class="checkbox-group">
+          <legend><span data-i18n="join.areas.legend"></span> <span class="required">*</span></legend>
+          <div id="provider-area-options"></div>
+          <p id="provider-areas-error" class="field-error" role="alert" hidden data-i18n="join.areas.error"></p>
+        </fieldset>
 
-        <label for="provider-waste">Waste types collected</label>
-        <select id="provider-waste" name="waste">
-          <option>Household bags</option><option>Garden waste</option>
-          <option>Bulky items</option><option>Recyclables</option><option>Business waste</option>
-        </select>
+        <fieldset id="provider-waste" class="checkbox-group">
+          <legend><span data-i18n="join.waste.legend"></span> <span class="required">*</span></legend>
+          <div id="provider-waste-options"></div>
+          <p id="provider-waste-error" class="field-error" role="alert" hidden data-i18n="join.waste.error"></p>
+        </fieldset>
 
-        <label for="provider-description">Service description</label>
-        <textarea id="provider-description" name="description" rows="3" maxlength="400" placeholder="Describe your service (optional)"></textarea>
+        <label for="provider-description" data-i18n="join.description"></label>
+        <textarea id="provider-description" name="description" rows="3" maxlength="500" data-i18n-placeholder="join.descriptionPlaceholder"></textarea>
 
         <label class="checkbox-row">
-          <input type="checkbox" name="consent" required>
-          <span>I agree that this information can be used to create a prototype listing. <strong>This demo does not publish it online.</strong></span>
+          <input id="provider-consent" type="checkbox" name="consent">
+          <span data-i18n="join.consent"></span>
         </label>
+        <p class="small-note" data-i18n="join.consentNote"></p>
 
-        <button class="button primary" type="submit">Preview my listing</button>
-        <p class="small-note">This prototype saves no account and does not send your details to a server.</p>
+        <button class="button primary" type="submit" data-i18n="join.submit"></button>
+        <p class="small-note" data-i18n="join.reviewNote"></p>
       </form>
       <div id="registration-feedback" class="feedback" role="status" hidden></div>
+      <div id="signed-in" hidden>
+        <p id="signed-in-as" class="small-note"></p>
+        <button id="sign-out" class="button secondary full-width" type="button" data-i18n="join.signOut"></button>
+      </div>
     </section>
 
     <section class="screen" id="preview" aria-labelledby="preview-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-back aria-label="Go back">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6 6"/></svg>
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow">Local preview only</p><h1 id="preview-title">Your listing preview</h1></div>
+        <div><p class="eyebrow" data-i18n="preview.eyebrow"></p><h1 id="preview-title" data-i18n="preview.title"></h1></div>
       </div>
       <div id="preview-content"></div>
-      <button class="button secondary full-width" data-go="join">Edit details</button>
-      <button class="button primary full-width" id="finish-preview" type="button">Finish preview</button>
+      <div id="preview-feedback" class="feedback" role="status" hidden></div>
+      <button class="button secondary full-width" data-back data-i18n="preview.edit"></button>
+      <button class="button primary full-width" id="submit-listing" type="button" data-i18n="preview.submit"></button>
     </section>
 
     <section class="screen" id="help" aria-labelledby="help-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-back aria-label="Go back">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6 6"/></svg>
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow">Support</p><h1 id="help-title">Help and feedback</h1></div>
+        <div><p class="eyebrow" data-i18n="help.eyebrow"></p><h1 id="help-title" data-i18n="help.title"></h1></div>
       </div>
       <div class="panel">
-        <h2>Using SetSetal</h2>
-        <p>Choose your area, filter by vehicle, and open a listing to see its service details. Confirm price and pickup arrangements directly with the provider.</p>
-        <p>Listings in this prototype are demonstration examples, not confirmed real services.</p>
+        <h2 data-i18n="help.using.title"></h2>
+        <p data-i18n="help.using.body"></p>
+        <p id="help-listings-note" data-i18n="help.using.demo"></p>
       </div>
       <form id="report-form" class="panel form-panel">
-        <h2>Send feedback</h2>
-        <label for="report-type">What is this about?</label>
-        <select id="report-type" name="type">
-          <option>General feedback</option>
-          <option>Incorrect listing</option>
-          <option>Safety concern</option>
-          <option>Accessibility problem</option>
-        </select>
-        <label for="report-message">Details</label>
-        <textarea id="report-message" name="message" required maxlength="1000" rows="4" placeholder="Tell us what happened"></textarea>
-        <button class="button primary" type="submit">Submit demo feedback</button>
-        <p class="small-note">Feedback stays in this browser session and is not sent to an administrator.</p>
+        <h2 data-i18n="help.report.title"></h2>
+        <div id="report-target" class="notice" hidden></div>
+        <label for="report-type" data-i18n="help.report.type"></label>
+        <select id="report-type" name="type"></select>
+        <label for="report-message" data-i18n="help.report.details"></label>
+        <textarea id="report-message" name="message" required maxlength="1000" rows="4" data-i18n-placeholder="help.report.detailsPlaceholder"></textarea>
+        <button id="report-submit" class="button primary" type="submit" data-i18n="help.report.submit"></button>
+        <p class="small-note" data-i18n="help.report.privacy"></p>
       </form>
       <div id="report-feedback" class="feedback" role="status" hidden></div>
     </section>
 
     <section class="screen" id="admin" aria-labelledby="admin-title" hidden>
       <div class="page-heading">
-        <button class="back-button" data-go="home" aria-label="Back to home">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6 6"/></svg>
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow">Prototype only</p><h1 id="admin-title">Admin overview</h1></div>
+        <div><p class="eyebrow" data-i18n="admin.eyebrow"></p><h1 id="admin-title" data-i18n="admin.title"></h1></div>
       </div>
-      <div class="notice"><strong>Demo dashboard</strong><p>No real user data, moderation queue, or administrator authentication is connected.</p></div>
-      <div class="stats-grid">
-        <article class="stat-card"><span>Sample listings</span><strong id="admin-listing-count">0</strong></article>
-        <article class="stat-card"><span>Reports received</span><strong id="admin-report-count">0</strong></article>
-        <article class="stat-card"><span>Pending review</span><strong>Not connected</strong></article>
-      </div>
-      <button class="button secondary full-width" data-go="find">Review sample listings</button>
+      <div id="admin-content"></div>
     </section>
   </main>
 
-  <nav class="bottom-nav" aria-label="Main navigation">
+  <nav class="bottom-nav" data-i18n-aria-label="nav.label">
     <button class="nav-item active" data-go="home" aria-current="page">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9M9 21v-7h6v7"/></svg>
-      <span>Home</span>
+      <span data-i18n="nav.home"></span>
     </button>
     <button class="nav-item" data-go="find">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-      <span>Find</span>
+      <span data-i18n="nav.find"></span>
     </button>
     <button class="nav-item" data-go="join">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a7 7 0 0 1 14 0v2M19 8v8M15 12h8"/></svg>
-      <span>Join</span>
+      <span data-i18n="nav.join"></span>
     </button>
     <button class="nav-item" data-go="help">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.4 2.4 0 1 1 4.3 1.5c-1.2 1.1-2 1.4-2 3M12 17h.01"/></svg>
-      <span>Help</span>
+      <span data-i18n="nav.help"></span>
     </button>
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <footer class="site-footer">SetSetal · Prototype for cleaner communities in The Gambia · By Ams.Designs </footer>
+  <footer class="site-footer" data-i18n="app.footer"></footer>
 </body>
 </html>
