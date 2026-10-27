@@ -463,3 +463,10 @@ h1[tabindex="-1"]:focus { outline: none; }
     transition-duration: .01ms !important;
   }
 }
+
+.admin-section { margin-top: 22px; }
+.admin-card h3 { margin: 0 0 4px; }
+.report-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.history-list { margin: 0; padding-left: 18px; }
+.history-list li { margin-bottom: 10px; overflow-wrap: anywhere; }
+.decision-form { margin-top: 12px; }

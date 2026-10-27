@@ -86,10 +86,6 @@ test("demonstration listings have no report link", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Report a problem with this listing" })).toHaveCount(0);
 });
 
-test("the admin overview doesn't claim to count reports it can't see", async ({ page }) => {
-  await page.goto("./#/admin");
-  await expect(page.locator("#admin-report-count")).toHaveText("Not connected");
-});
 
 const cartRow = {
   id: "8b0c7a52-3f1e-4f43-9a51-1c2d3e4f5a61", name: "Brikama Donkey Cart", vehicle_type: "donkey-cart",

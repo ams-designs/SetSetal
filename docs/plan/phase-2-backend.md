@@ -20,11 +20,14 @@
   - [ ] Choose how codes are sent for the pilot (decision D5): an Android phone as SMS gateway through Supabase's Send SMS hook, or a paid provider.
   - [ ] **Before launch:** set Supabase Auth SMS rate limits and turn on a captcha for `/otp` (needs `captcha_token` in the request), so nobody can run up the SMS bill.
 - [x] Collector flow: submit a listing (multiple areas and waste types, with an explicit consent checkbox that writes `consent_at`), view its status, and edit it. `src/join.ts` and `save_my_listing()`; one listing per collector; the form's areas come from the database.
-- [ ] Admin screen behind sign-in and the admin role:
-  - [ ] review queue
-  - [ ] approve, reject or suspend, with a required reason
-  - [ ] reports list
-  - [ ] audit history
+- [x] Admin screen behind sign-in and the admin role (`src/admin.ts`; the same phone sign-in, then the `admins` table decides):
+  - [x] review queue
+  - [x] approve, reject or suspend, with a required reason (shown to the collector)
+  - [x] reports list (resolve or dismiss with a note)
+  - [x] audit history
+  - [ ] Add the first admin: once someone has signed in, insert their user id into `admins` from the SQL editor.
+  - [ ] Give `set_collector_status` an expected status and `updated_at`, and have contact, area and waste edits touch `collectors.updated_at`, so the server (not only the screen) refuses decisions on a version the admin didn't see.
+  - [ ] Show rejected and suspended listings so a decision can be reversed, and record report decisions in the history.
 - [x] Contact buttons (`tel:` and `wa.me/<E.164 number without +>`) appear only when the status is approved and `consent_at` is set, following D1 (both). The Find and profile screens read `public_collectors` (`src/api.ts`); saved copies lose contact details after 48 hours and expire after 7 days.
 - [x] Offline report queue: Workbox `BackgroundSyncPlugin` on the reports insert, or a small IndexedDB outbox. Tell the user clearly that the report is queued. A localStorage outbox (`src/reports.ts`) sends on start-up and when the phone comes back online; reports can be linked to a real listing from its profile.
 - [x] Generate TypeScript types from the schema (`supabase gen types`). In `src/types/db.ts`; regenerate after each migration.

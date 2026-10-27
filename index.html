@@ -149,6 +149,7 @@
       <div id="join-signin" class="panel form-panel" hidden>
         <form id="signin-phone-form">
           <h2 data-i18n="join.signin.title"></h2>
+          <p id="signin-admin-note" class="notice" hidden data-i18n="join.signin.adminNote"></p>
           <p data-i18n="join.signin.body"></p>
           <label for="signin-phone" data-i18n="join.signin.phone"></label>
           <input id="signin-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" data-i18n-placeholder="join.signin.phonePlaceholder">
@@ -259,13 +260,7 @@
         </button>
         <div><p class="eyebrow" data-i18n="admin.eyebrow"></p><h1 id="admin-title" data-i18n="admin.title"></h1></div>
       </div>
-      <div class="notice"><strong data-i18n="admin.notice.title"></strong><p data-i18n="admin.notice.body"></p></div>
-      <div class="stats-grid">
-        <article class="stat-card"><span data-i18n="admin.listings"></span><strong id="admin-listing-count">0</strong></article>
-        <article class="stat-card"><span data-i18n="admin.reports"></span><strong id="admin-report-count" data-i18n="admin.notConnected"></strong></article>
-        <article class="stat-card"><span data-i18n="admin.pending"></span><strong data-i18n="admin.notConnected"></strong></article>
-      </div>
-      <button class="button secondary full-width" data-go="find" data-i18n="admin.reviewListings"></button>
+      <div id="admin-content"></div>
     </section>
   </main>
 

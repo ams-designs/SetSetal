@@ -1,10 +1,14 @@
 {
   "_readme": "Only strings marked 'reviewed' (checked by a native speaker) are shown; anything else falls back to English. Use 'draft' for machine or non-native drafts. Keys in 'priority' are trust-critical: their meaning must stay exact, so review them first.",
   "priority": [
+    "admin.consentNo",
+    "admin.done.approved",
+    "admin.done.suspended",
+    "admin.error.offline",
+    "admin.error.stale",
+    "admin.error.unknown",
     "admin.eyebrow",
-    "admin.listings",
-    "admin.notConnected",
-    "admin.notice.body",
+    "admin.reasonShown",
     "demo.demo-donkey.description",
     "demo.demo-donkey.name",
     "demo.demo-horse.description",

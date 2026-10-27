@@ -1,7 +1,7 @@
-// The Help screen's feedback form and the admin overview's counts.
+// The Help screen's feedback form.
 import { t } from "./i18n";
 import { REPORT_TYPES, isReportType, reportTypeLabel } from "./data/lookups";
-import { fillSelect, sampleCollectors } from "./listings";
+import { fillSelect } from "./listings";
 import { submitReport } from "./reports";
 import { $, escapeHTML } from "./ui";
 
@@ -66,11 +66,6 @@ async function handleReport(event: SubmitEvent): Promise<void> {
     setReportTarget(null);
     feedback.hidden = false;
   }
-}
-
-export function updateAdminCounts(): void {
-  $("#admin-listing-count").textContent = String(sampleCollectors.length);
-  $("#admin-report-count").textContent = t("admin.notConnected");
 }
 
 export function populateForms(): void {

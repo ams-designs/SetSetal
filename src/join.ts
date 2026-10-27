@@ -5,6 +5,7 @@ import { isVehicle, isWaste, vehicleLabel, wasteLabel, type VehicleId, type Wast
 import { fillSelect, iconFor, vehicleOptions, wasteOptions } from "./listings";
 import { currentSession, normalisePhone, requestCode, signOut, verifyCode, type AuthResult } from "./auth";
 import { fetchAreas, fetchMyListing, saveMyListing, type Area, type ListingDraft, type MyListing } from "./collector";
+import { clearAdmin } from "./admin";
 import { go } from "./router";
 import { $, $$, escapeHTML, toast } from "./ui";
 
@@ -21,10 +22,24 @@ let codePhone = "";
 // Whose listing the state above belongs to.
 let loadedFor: string | null = null;
 let submitting = false;
+// Where to go after signing in, when another screen sent the user here.
+let returnTo: "admin" | null = null;
+
+export function signInThen(screen: "admin"): void {
+  returnTo = screen;
+  go("join");
+}
+
+// Called when another screen is shown, so a later sign-in doesn't jump to a
+// screen the user has since left.
+export function leaveJoin(): void {
+  returnTo = null;
+}
 
 // Forgets everything about the last collector, so on a shared phone the next
 // one never sees their details.
 function resetCollectorState(): void {
+  clearAdmin();
   myListing = null;
   draft = null;
   editing = false;
@@ -67,6 +82,7 @@ function feedback(selector: string, key: MessageKey | null): void {
 
 function showSignIn(): void {
   showOnly("#join-signin");
+  $("#signin-admin-note").hidden = returnTo !== "admin";
   $("#signin-phone-form").hidden = Boolean(codePhone);
   $("#signin-code-form").hidden = !codePhone;
 }
@@ -124,6 +140,12 @@ async function handleCode(event: SubmitEvent): Promise<void> {
   feedback("#signin-feedback", null);
   codePhone = "";
   form.reset();
+  if (returnTo) {
+    const screen = returnTo;
+    returnTo = null;
+    go(screen);
+    return;
+  }
   await renderJoin();
 }
 
