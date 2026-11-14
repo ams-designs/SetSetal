@@ -19,6 +19,8 @@ export interface MyListing {
   waste: string[];
   // Why it was last rejected or suspended, from the audit log.
   reason: string | null;
+  // The collector has said they are collecting today.
+  availableToday: boolean;
 }
 
 export interface ListingDraft {
@@ -31,11 +33,6 @@ export interface ListingDraft {
   areas: string[];
   waste: string[];
   consent: boolean;
-}
-
-export interface Area {
-  id: string;
-  name: string;
 }
 
 export type LoadResult<T> = { ok: true; value: T } | { ok: false; error: "offline" | "signed-out" | "failed" };
@@ -52,10 +49,6 @@ async function getJSON<T>(path: string, token?: string): Promise<LoadResult<T>> 
   }
 }
 
-// The areas a listing can choose: the database's list, not the demo list.
-export const fetchAreas = (): Promise<LoadResult<Area[]>> =>
-  getJSON("areas?select=id,name&order=sort_order.asc,name.asc");
-
 interface ListingRow {
   id: string;
   name: string;
@@ -63,6 +56,7 @@ interface ListingRow {
   description: string;
   consent_at: string | null;
   status: ListingStatus;
+  available_on: string | null;
   // One-to-one embeds come back as an object; allow an array too.
   collector_contacts: { phone: string | null; whatsapp: string | null } | { phone: string | null; whatsapp: string | null }[] | null;
   collector_areas: { area_id: string }[];
@@ -71,7 +65,7 @@ interface ListingRow {
 
 export async function fetchMyListing(session: Session): Promise<LoadResult<MyListing | null>> {
   const rows = await getJSON<ListingRow[]>(
-    "collectors?select=id,name,vehicle_type,description,consent_at,status," +
+    "collectors?select=id,name,vehicle_type,description,consent_at,status,available_on," +
     "collector_contacts(phone,whatsapp),collector_areas(area_id),collector_waste_types(waste_type_id)" +
     `&owner=eq.${encodeURIComponent(session.userId)}&order=created_at.asc&limit=1`,
     session.accessToken);
@@ -100,7 +94,9 @@ export async function fetchMyListing(session: Session): Promise<LoadResult<MyLis
       whatsapp: contacts?.whatsapp ?? "",
       areas: row.collector_areas.map((link) => link.area_id),
       waste: row.collector_waste_types.map((link) => link.waste_type_id),
-      reason
+      reason,
+      // The Gambia is on UTC all year, so the UTC date is today's date there.
+      availableToday: row.available_on === new Date().toISOString().slice(0, 10)
     }
   };
 }
@@ -138,3 +134,24 @@ export async function saveMyListing(session: Session, draft: ListingDraft): Prom
     return { ok: false, error: navigator.onLine ? "unknown" : "offline" };
   }
 }
+
+export type ActionResult = "ok" | "offline" | "unknown" | "signed-out" | "failed";
+
+async function rpc(session: Session, name: string, body: object): Promise<ActionResult> {
+  if (!navigator.onLine) return "offline";
+  try {
+    const response = await call(`rest/v1/rpc/${name}`, { method: "POST", body: JSON.stringify(body) }, session.accessToken);
+    if (response.ok) return "ok";
+    if (response.status === 401) return "signed-out";
+    return response.status >= 500 ? "unknown" : "failed";
+  } catch {
+    return navigator.onLine ? "unknown" : "offline";
+  }
+}
+
+// "Collecting today": lasts until midnight, and isn't reviewed by an admin.
+export const setAvailability = (session: Session, available: boolean): Promise<ActionResult> =>
+  rpc(session, "set_my_availability", { p_available: available });
+
+// Removes the sign-in and, with it, the listing and its phone numbers.
+export const deleteAccount = (session: Session): Promise<ActionResult> => rpc(session, "delete_my_account", {});

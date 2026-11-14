@@ -36,7 +36,8 @@ test("a consented listing offers Call and WhatsApp", async ({ page, context }) =
   await expectScreen(page, "Collector profile");
   await expect(page.getByRole("link", { name: "Call Brikama Donkey Cart" })).toHaveAttribute("href", "tel:+2207000001");
   await expect(page.getByRole("link", { name: "Message Brikama Donkey Cart on WhatsApp" }))
-    .toHaveAttribute("href", "https://wa.me/2207000001");
+    .toHaveAttribute("href", "https://wa.me/2207000001?text=" +
+      encodeURIComponent("Hello, I found you on SetSetal. I'd like to arrange a waste collection."));
 });
 
 test("a listing without contact details shows no contact links", async ({ page, context }) => {

@@ -2,7 +2,7 @@
 -- change lookup lists.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(23);
 
 insert into auth.users (id) values
   ('00000000-0000-0000-0000-00000000000a'),
@@ -66,6 +66,17 @@ select is_empty($$select 1 from information_schema.columns
                   where table_schema = 'public' and table_name = 'reports'
                     and column_name ~ '(address|street|house|resident|email|phone)'$$,
   'reports have no column for a resident''s address or identity');
+
+-- The app's one-request copy of the lists ----------------------------------------
+reset role;
+update public.waste_types set active = false where id = 'business';
+set local role anon;
+select set_config('request.jwt.claims', '', true);
+select is((select public.app_lookups() -> 'waste_types'), '["household", "garden", "bulky", "recyclables"]'::jsonb,
+  'app_lookups lists what is in use, in order');
+select is((select public.app_lookups() -> 'areas'),
+  '[{"id": "nyambai", "name": "Nyambai"}, {"id": "brikama", "name": "Brikama"}]'::jsonb,
+  'app_lookups includes area names, by sort order');
 
 select * from finish();
 rollback;

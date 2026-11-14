@@ -8,6 +8,45 @@ export async function mockListings(context: BrowserContext, rows: object[]) {
   await context.route(API, (route) => route.fulfill({ json: rows }));
 }
 
+export interface AreaRow { id: string; name: string }
+
+// What public.app_lookups() returns: the lists the app offers.
+export async function mockLookups(context: BrowserContext, areas: AreaRow[], overrides: object = {}) {
+  await context.route(/\/rest\/v1\/rpc\/app_lookups/, (route) => route.fulfill({
+    json: {
+      areas,
+      vehicle_types: ["municipal-truck", "private-truck", "small-van", "tricycle", "donkey-cart", "horse-cart"],
+      waste_types: ["household", "garden", "bulky", "recyclables", "business"],
+      report_types: ["general", "incorrect-listing", "safety", "accessibility"],
+      ...overrides
+    }
+  }));
+}
+
+// Usage counts the app sent, for tests that check what is (and isn't) counted.
+export async function recordEvents(context: BrowserContext) {
+  const events: Record<string, unknown>[] = [];
+  await context.route(/\/rest\/v1\/events/, (route) => {
+    events.push(route.request().postDataJSON() as Record<string, unknown>);
+    return route.fulfill({ status: 201, body: "" });
+  });
+  return events;
+}
+
+// Stands in for Cloudflare Turnstile: the check passes as soon as it is shown.
+const TURNSTILE_STUB = `
+  window.turnstileRenders = 0;
+  window.turnstile = {
+    render(container, options) {
+      window.turnstileRenders++;
+      container.textContent = "Security check passed";
+      window.turnstilePass = () => options.callback("test-captcha-token-" + window.turnstileRenders++);
+      if (!window.turnstileHold) window.turnstilePass();
+      return "widget-1";
+    },
+    reset() { if (!window.turnstileHold) window.turnstilePass(); }
+  };`;
+
 // Every test fails on a console error or an uncaught exception, and never
 // reaches the live database: the API answers with no real listings unless a
 // test calls mockListings.
@@ -16,6 +55,8 @@ export const test = base.extend<{ consoleErrors: string[]; api: void }>({
     async ({ context }, use) => {
       await mockListings(context, []);
       await context.route(/\/auth\/v1\//, (route) => route.fulfill({ status: 503, json: { msg: "Not mocked" } }));
+      await context.route(/challenges\.cloudflare\.com/, (route) =>
+        route.fulfill({ contentType: "application/javascript", body: TURNSTILE_STUB }));
       await use();
     },
     { auto: true }
@@ -57,6 +98,7 @@ export interface CollectorRow {
   description: string;
   consent_at: string | null;
   status: "submitted" | "approved" | "rejected" | "suspended";
+  available_on?: string | null;
   collector_contacts: { phone: string | null; whatsapp: string | null } | null;
   collector_areas: { area_id: string }[];
   collector_waste_types: { waste_type_id: string }[];
@@ -72,13 +114,32 @@ export async function mockCollectorBackend(context: BrowserContext, options: {
   statusAfterSave?: CollectorRow["status"];
   verifyStatus?: number;
   otp?: { status: number; body?: object };
+  areas?: AreaRow[];
+  // The answer to set_my_availability and delete_my_account.
+  actionStatus?: number;
 } = {}) {
   let listing = options.listing ?? null;
   const saved: object[] = [];
   const codesSent: object[] = [];
-  await context.route(/\/rest\/v1\/areas/, (route) =>
-    route.fulfill({ json: [{ id: "brikama", name: "Brikama" }, { id: "nyambai", name: "Nyambai" }] }));
+  // Calls to set_my_availability and delete_my_account, in order.
+  const actions: { name: string; body: unknown }[] = [];
+  await mockLookups(context, options.areas ?? [{ id: "brikama", name: "Brikama" }, { id: "nyambai", name: "Nyambai" }]);
   await context.route(/\/rest\/v1\/collectors\?/, (route) => route.fulfill({ json: listing ? [listing] : [] }));
+  await context.route(/\/rest\/v1\/rpc\/set_my_availability/, (route) => {
+    const body = route.request().postDataJSON() as { p_available: boolean };
+    actions.push({ name: "set_my_availability", body });
+    const status = options.actionStatus ?? 200;
+    if (status !== 200) return route.fulfill({ status, json: { message: "refused" } });
+    if (listing) listing = { ...listing, available_on: body.p_available ? new Date().toISOString().slice(0, 10) : null };
+    return route.fulfill({ json: body.p_available });
+  });
+  await context.route(/\/rest\/v1\/rpc\/delete_my_account/, (route) => {
+    actions.push({ name: "delete_my_account", body: route.request().postDataJSON() });
+    const status = options.actionStatus ?? 204;
+    if (status !== 204) return route.fulfill({ status, json: { message: "refused" } });
+    listing = null;
+    return route.fulfill({ status: 204, body: "" });
+  });
   await context.route(/\/rest\/v1\/audit_log/, (route) =>
     route.fulfill({ json: options.reason ? [{ reason: options.reason }] : [] }));
   await context.route(/\/rest\/v1\/rpc\/save_my_listing/, (route) => {
@@ -108,7 +169,7 @@ export async function mockCollectorBackend(context: BrowserContext, options: {
       ? { json: { access_token: "test-token", refresh_token: "test-refresh", expires_in: 3600, user: { id: COLLECTOR_ID, phone: "2207000001" } } }
       : { status: options.verifyStatus, json: { msg: "Token has expired or is invalid" } }));
   await context.route(/\/auth\/v1\/logout/, (route) => route.fulfill({ status: 204, body: "" }));
-  return { saved, codesSent };
+  return { saved, codesSent, actions };
 }
 
 export const activeScreen = (page: Page) => page.locator(".screen.active");
@@ -117,5 +178,14 @@ export async function expectScreen(page: Page, heading: string, hash?: string) {
   await expect(activeScreen(page).getByRole("heading", { level: 1 })).toHaveText(heading);
   if (hash !== undefined) await expect(page).toHaveURL(new RegExp(`${hash.replace(/[/]/g, "\\/")}$`));
 }
+
+// Buttons and links on the active screen smaller than the 48px touch target.
+export const smallTargets = (page: Page) =>
+  page.locator(".screen.active button, .screen.active a, .site-footer a").evaluateAll((elements) =>
+    elements
+      .filter((element) => (element as HTMLElement).offsetParent !== null)
+      .map((element) => ({ text: element.textContent?.trim() || element.getAttribute("aria-label"), box: element.getBoundingClientRect() }))
+      .filter(({ box }) => box.height < 48 || box.width < 48)
+      .map(({ text, box }) => `${text} ${Math.round(box.width)}x${Math.round(box.height)}`));
 
 export const nav = (page: Page) => page.getByRole("navigation", { name: "Main navigation" });

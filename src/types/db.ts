@@ -1,6 +1,10 @@
 // Generated from the SetSetal Supabase project. Do not edit by hand; regenerate
 // after each migration (Supabase MCP generate_typescript_types, or
 // `supabase gen types typescript --project-id gplmfpglapxicfghlkid`).
+//
+// The 14 Nov 2026 migrations (availability, decision guard, events, retention,
+// app_lookups) were added here by hand in the generator's format, because the
+// hosted project was paused. Regenerate once they are deployed.
 export type Json =
   | string
   | number
@@ -213,6 +217,7 @@ export type Database = {
       }
       collectors: {
         Row: {
+          available_on: string | null
           consent_at: string | null
           created_at: string
           description: string
@@ -224,6 +229,7 @@ export type Database = {
           vehicle_type: string
         }
         Insert: {
+          available_on?: string | null
           consent_at?: string | null
           created_at?: string
           description?: string
@@ -235,6 +241,7 @@ export type Database = {
           vehicle_type: string
         }
         Update: {
+          available_on?: string | null
           consent_at?: string | null
           created_at?: string
           description?: string
@@ -251,6 +258,57 @@ export type Database = {
             columns: ["vehicle_type"]
             isOneToOne: false
             referencedRelation: "vehicle_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          area: string | null
+          channel: string | null
+          collector_id: string | null
+          day: string
+          id: number
+          name: string
+          report_type: string | null
+          vehicle: string | null
+          waste: string | null
+        }
+        Insert: {
+          area?: string | null
+          channel?: string | null
+          collector_id?: string | null
+          day?: string
+          id?: never
+          name: string
+          report_type?: string | null
+          vehicle?: string | null
+          waste?: string | null
+        }
+        Update: {
+          area?: string | null
+          channel?: string | null
+          collector_id?: string | null
+          day?: string
+          id?: never
+          name?: string
+          report_type?: string | null
+          vehicle?: string | null
+          waste?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_collector_id_fkey"
+            columns: ["collector_id"]
+            isOneToOne: false
+            referencedRelation: "collectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_collector_id_fkey"
+            columns: ["collector_id"]
+            isOneToOne: false
+            referencedRelation: "public_collectors"
             referencedColumns: ["id"]
           },
         ]
@@ -372,6 +430,7 @@ export type Database = {
       public_collectors: {
         Row: {
           areas: string[] | null
+          available_today: boolean | null
           description: string | null
           id: string | null
           name: string | null
@@ -393,6 +452,9 @@ export type Database = {
       }
     }
     Functions: {
+      admin_activity: { Args: { p_days?: number }; Returns: Json }
+      app_lookups: { Args: never; Returns: Json }
+      delete_my_account: { Args: never; Returns: undefined }
       owner_edit_reason: { Args: never; Returns: string }
       save_my_listing: {
         Args: {
@@ -411,11 +473,14 @@ export type Database = {
       set_collector_status: {
         Args: {
           p_collector: string
+          p_expected_status: Database["public"]["Enums"]["collector_status"]
+          p_expected_updated_at: string
           p_reason: string
           p_status: Database["public"]["Enums"]["collector_status"]
         }
         Returns: undefined
       }
+      set_my_availability: { Args: { p_available: boolean }; Returns: boolean }
     }
     Enums: {
       collector_status: "submitted" | "approved" | "rejected" | "suspended"

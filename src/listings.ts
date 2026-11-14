@@ -1,16 +1,16 @@
 import { t, plural, formatDate, type MessageKey } from "./i18n";
 import {
-  AREAS, OTHER_AREA, VEHICLES, WASTE_TYPES,
-  areaLabel, isVehicle, isWaste, vehicleLabel, wasteLabel,
-  type AreaId, type VehicleId, type WasteId
+  OTHER_AREA, areaLabel, areas, isVehicle, isWaste, vehicleLabel, vehicles, wasteLabel, wasteTypes,
+  type Area, type VehicleId, type WasteId
 } from "./data/lookups";
 import { backendConfigured, fetchPublicCollectors, type PublicCollectorRow } from "./api";
+import { trackNoResults } from "./analytics";
 import { $, escapeHTML } from "./ui";
 
 interface Collector {
   id: string;
   vehicle: VehicleId;
-  area: AreaId;
+  area: string;
   waste: WasteId[];
 }
 
@@ -29,7 +29,19 @@ export interface Listing {
   // the server leaves them out otherwise (product rule 2).
   phone: string | null;
   whatsapp: string | null;
+  // The collector has said they are working today. Real listings only.
+  availableToday: boolean;
 }
+
+// The towns the demonstration listings use. They are part of the samples, not
+// the list of areas SetSetal serves: that comes from the database.
+const DEMO_AREAS: Area[] = [
+  { id: "banjul", name: "Banjul" },
+  { id: "bakau", name: "Bakau" },
+  { id: "kanifing", name: "Kanifing" },
+  { id: "serrekunda", name: "Serrekunda" },
+  { id: "brikama", name: "Brikama" }
+];
 
 // These are demonstration records, not real or verified businesses. Every
 // card and profile shows the "Demonstration listing" label while they are used.
@@ -121,6 +133,10 @@ const HOUR = 60 * 60 * 1000;
 // that stay offline: contact details after 48 hours, everything after 7 days.
 const CONTACT_MAX_AGE = 48 * HOUR;
 const CACHE_MAX_AGE = 7 * 24 * HOUR;
+// "Collecting today" is true only on the day it was saved (UTC, which is
+// Gambian time).
+const sameDay = (a: number, b: number): boolean =>
+  new Date(a).toISOString().slice(0, 10) === new Date(b).toISOString().slice(0, 10);
 
 interface SavedListings {
   savedAt: number;
@@ -136,7 +152,8 @@ const demoListings = (): Listing[] => sampleCollectors.map((collector) => ({
   name: "",
   description: "",
   phone: null,
-  whatsapp: null
+  whatsapp: null,
+  availableToday: false
 }));
 
 function fromRow(row: PublicCollectorRow): Listing | null {
@@ -150,7 +167,8 @@ function fromRow(row: PublicCollectorRow): Listing | null {
     name: row.name,
     description: row.description ?? "",
     phone: row.phone && E164.test(row.phone) ? row.phone : null,
-    whatsapp: row.whatsapp && E164.test(row.whatsapp) ? row.whatsapp : null
+    whatsapp: row.whatsapp && E164.test(row.whatsapp) ? row.whatsapp : null,
+    availableToday: row.available_today === true
   };
 }
 
@@ -163,9 +181,13 @@ let savedAt: number | null = null;
 export const listingsPending = (): boolean => pending;
 export const listingsSavedAt = (): number | null => savedAt;
 
-function useRows(rows: PublicCollectorRow[], options: { withoutContacts?: boolean } = {}): void {
+function useRows(rows: PublicCollectorRow[], options: { withoutContacts?: boolean; withoutAvailability?: boolean } = {}): void {
   const real = rows.map(fromRow).filter((listing): listing is Listing => listing !== null);
   if (options.withoutContacts) real.forEach((listing) => { listing.phone = null; listing.whatsapp = null; });
+  if (options.withoutAvailability) real.forEach((listing) => { listing.availableToday = false; });
+  // Collectors working today come first, then by name. Never by anything paid
+  // (product rule 5).
+  real.sort((a, b) => Number(b.availableToday) - Number(a.availableToday) || a.name.localeCompare(b.name));
   listings = real.length ? real : demoListings();
   pending = false;
 }
@@ -191,11 +213,21 @@ function writeCache(rows: PublicCollectorRow[]): void {
 // Shows the last saved listings straight away, then asks the server. Offline,
 // or if the request fails, whatever was shown stays: saved real listings, or
 // the labelled demonstrations.
+let listingsChanged: () => void = () => {};
+
+// Asks the server again, for example after a collector changes their own
+// listing, so the Find screen on this phone shows it straight away.
+export const reloadListings = (): Promise<void> => loadListings(listingsChanged);
+
 export async function loadListings(onChange: () => void): Promise<void> {
+  listingsChanged = onChange;
   if (!backendConfigured) return;
   const cached = readCache();
   if (cached) {
-    useRows(cached.rows, { withoutContacts: Date.now() - cached.savedAt >= CONTACT_MAX_AGE });
+    useRows(cached.rows, {
+      withoutContacts: Date.now() - cached.savedAt >= CONTACT_MAX_AGE,
+      withoutAvailability: !sameDay(cached.savedAt, Date.now())
+    });
     savedAt = cached.savedAt;
     onChange();
   }
@@ -224,7 +256,9 @@ export const nameOf = (listing: Listing): string =>
   listing.demo ? t(`demo.${listing.id}.name` as MessageKey) : listing.name;
 const descriptionOf = (listing: Listing): string =>
   listing.demo ? t(`demo.${listing.id}.description` as MessageKey) : listing.description;
-const areaList = (areas: readonly string[]): string => areas.map(areaLabel).join(", ");
+const areaName = (listing: Listing, id: string): string =>
+  (listing.demo ? DEMO_AREAS.find((area) => area.id === id)?.name : undefined) ?? areaLabel(id);
+const areaList = (listing: Listing): string => listing.areas.map((id) => areaName(listing, id)).join(", ");
 
 const wasteList = (waste: readonly WasteId[]): string => waste.map(wasteLabel).join(", ");
 
@@ -233,17 +267,28 @@ const optionsHTML = (items: { value: string; label: string }[]): string =>
     `<option value="${escapeHTML(value)}">${escapeHTML(label)}</option>`
   ).join("");
 
-// Appends options after a select's placeholder options from index.html.
+// Replaces a select's options, keeping the placeholder options from
+// index.html (the ones with a data-i18n key) and the current choice when it is
+// still offered.
 export function fillSelect(select: HTMLSelectElement, items: { value: string; label: string }[]): void {
+  const chosen = select.value;
+  [...select.options].filter((option) => !option.dataset.i18n).forEach((option) => option.remove());
   select.insertAdjacentHTML("beforeend", optionsHTML(items));
+  if ([...select.options].some((option) => option.value === chosen)) select.value = chosen;
 }
 
-export const areaOptions = (withOther: boolean) => [
-  ...AREAS.map((area) => ({ value: area.id, label: area.name })),
-  ...(withOther ? [{ value: OTHER_AREA, label: areaLabel(OTHER_AREA) }] : [])
-];
-export const vehicleOptions = () => VEHICLES.map((id) => ({ value: id, label: vehicleLabel(id) }));
-export const wasteOptions = () => WASTE_TYPES.map((id) => ({ value: id, label: wasteLabel(id) }));
+// The areas the Find filter offers: the samples' towns while demonstrations
+// are shown; otherwise the database's list, or (if that hasn't loaded) the
+// areas the listings themselves name.
+function areaChoices(): Area[] {
+  if (showingDemos()) return DEMO_AREAS;
+  if (areas().length) return areas();
+  const ids = [...new Set(listings.flatMap((listing) => listing.areas))];
+  return ids.map((id) => ({ id, name: areaLabel(id) })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export const vehicleOptions = () => vehicles().map((id) => ({ value: id, label: vehicleLabel(id) }));
+export const wasteOptions = () => wasteTypes().map((id) => ({ value: id, label: wasteLabel(id) }));
 
 interface Filters {
   area: string;
@@ -259,6 +304,10 @@ function matchesFilters(listing: Listing, filters: Filters): boolean {
 
 const demoLabel = (listing: Listing): string =>
   listing.demo ? `<span class="demo-label">${escapeHTML(t("listing.demoLabel"))}</span>` : "";
+// The collector's own word that they are working today; SetSetal hasn't
+// checked it, and the label says so on the profile.
+const todayLabel = (listing: Listing): string =>
+  listing.availableToday ? `<span class="today-label">${escapeHTML(t("listing.availableToday"))}</span>` : "";
 
 function collectorCard(listing: Listing): string {
   return `
@@ -266,9 +315,9 @@ function collectorCard(listing: Listing): string {
         <div class="vehicle-art">${iconFor(listing.vehicle)}</div>
         <div>
           <h3>${escapeHTML(nameOf(listing))}</h3>
-          <p>${escapeHTML(vehicleLabel(listing.vehicle))} · ${escapeHTML(areaList(listing.areas))}</p>
+          <p>${escapeHTML(vehicleLabel(listing.vehicle))} · ${escapeHTML(areaList(listing))}</p>
           <p>${escapeHTML(t("listing.wasteTypes", { types: wasteList(listing.waste) }))}</p>
-          ${demoLabel(listing)}
+          ${demoLabel(listing)}${todayLabel(listing)}
           <div class="card-actions">
             <button class="button secondary" type="button"
               data-profile="${escapeHTML(listing.id)}">${escapeHTML(t("listing.viewDetails"))}</button>
@@ -291,8 +340,12 @@ function emptyState(otherArea: boolean, demo: boolean): string {
         </div>`;
 }
 
+// Runs at start-up and again whenever the lists or the listings change.
 export function populateFilters(): void {
-  fillSelect($<HTMLSelectElement>("#area"), areaOptions(true));
+  fillSelect($<HTMLSelectElement>("#area"), [
+    ...areaChoices().map((area) => ({ value: area.id, label: area.name })),
+    { value: OTHER_AREA, label: areaLabel(OTHER_AREA) }
+  ]);
   fillSelect($<HTMLSelectElement>("#vehicle-filter"), vehicleOptions());
   fillSelect($<HTMLSelectElement>("#waste-type"), wasteOptions());
 }
@@ -303,7 +356,9 @@ export function clearFilters(): void {
   $<HTMLSelectElement>("#waste-type").value = "all";
 }
 
-export function renderCollectors(): void {
+// "searched" is true when the resident pressed the search button, so a search
+// that finds nothing is counted once and not on every redraw.
+export function renderCollectors(options: { searched?: boolean } = {}): void {
   const filters: Filters = {
     area: $<HTMLSelectElement>("#area").value,
     vehicle: $<HTMLSelectElement>("#vehicle-filter").value,
@@ -322,6 +377,8 @@ export function renderCollectors(): void {
   $("#collector-results").innerHTML = results.length
     ? results.map(collectorCard).join("")
     : emptyState(filters.area === OTHER_AREA, demo);
+  // Only searches of real listings say anything about what is missing.
+  if (options.searched && !demo && results.length === 0) trackNoResults(filters);
 }
 
 const savedNote = (): string => t("listing.savedNote", { date: formatDate(savedAt ?? Date.now()) });
@@ -344,11 +401,13 @@ function contactSection(listing: Listing): string {
   }
   const name = nameOf(listing);
   const call = listing.phone ? `
-          <a class="button" href="tel:${escapeHTML(listing.phone)}"
+          <a class="button primary" href="tel:${escapeHTML(listing.phone)}" data-contact="call" data-id="${escapeHTML(listing.id)}"
             aria-label="${escapeHTML(t("profile.callLabel", { name }))}">${escapeHTML(t("profile.call"))}</a>` : "";
+  // The message is only a suggestion the resident can change before sending.
+  const text = encodeURIComponent(t("profile.whatsappText"));
   const whatsapp = listing.whatsapp ? `
-          <a class="button secondary" href="https://wa.me/${escapeHTML(listing.whatsapp.slice(1))}"
-            target="_blank" rel="noopener"
+          <a class="button secondary" href="https://wa.me/${escapeHTML(listing.whatsapp.slice(1))}?text=${escapeHTML(text)}"
+            target="_blank" rel="noopener" data-contact="whatsapp" data-id="${escapeHTML(listing.id)}"
             aria-label="${escapeHTML(t("profile.whatsappLabel", { name }))}">${escapeHTML(t("profile.whatsapp"))}</a>` : "";
   return `
         <div class="card-actions contact-actions">${call}${whatsapp}
@@ -380,11 +439,13 @@ export function renderProfile(id: string | null): void {
           <div class="vehicle-art">${iconFor(collector.vehicle)}</div>
           <div>
             <h2>${escapeHTML(nameOf(collector))}</h2>
-            ${demoLabel(collector)}
+            ${demoLabel(collector)}${todayLabel(collector)}
           </div>
         </div>${
+          (collector.availableToday ? `
+        <p class="small-note">${escapeHTML(t("profile.availableNote"))}</p>` : "") +
           row(t("profile.vehicle"), vehicleLabel(collector.vehicle)) +
-          row(t("profile.area"), areaList(collector.areas)) +
+          row(t("profile.area"), areaList(collector)) +
           row(t("profile.waste"), wasteList(collector.waste)) +
           (descriptionOf(collector) ? row(t("profile.about"), descriptionOf(collector)) : "")}${
           contactSection(collector)}${savedLine(collector)}

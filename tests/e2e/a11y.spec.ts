@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "./fixtures";
 
-for (const hash of ["#/", "#/find", "#/collector/demo-van", "#/join", "#/help", "#/admin"]) {
+for (const hash of ["#/", "#/find", "#/collector/demo-van", "#/join", "#/help", "#/privacy", "#/admin"]) {
   test(`no serious or critical axe violations on ${hash}`, async ({ page }) => {
     await page.goto("./" + hash);
     await expect(page.locator("body.ready")).toBeVisible();

@@ -153,6 +153,7 @@
           <p data-i18n="join.signin.body"></p>
           <label for="signin-phone" data-i18n="join.signin.phone"></label>
           <input id="signin-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" data-i18n-placeholder="join.signin.phonePlaceholder">
+          <div id="signin-captcha"></div>
           <button id="signin-send" class="button primary" type="submit" data-i18n="join.signin.send"></button>
           <p class="small-note" data-i18n="join.signin.sharedNote"></p>
         </form>
@@ -204,6 +205,7 @@
           <span data-i18n="join.consent"></span>
         </label>
         <p class="small-note" data-i18n="join.consentNote"></p>
+        <p class="small-note"><a href="#/privacy" data-go="privacy" data-i18n="privacy.link"></a></p>
 
         <button class="button primary" type="submit" data-i18n="join.submit"></button>
         <p class="small-note" data-i18n="join.reviewNote"></p>
@@ -212,6 +214,15 @@
       <div id="signed-in" hidden>
         <p id="signed-in-as" class="small-note"></p>
         <button id="sign-out" class="button secondary full-width" type="button" data-i18n="join.signOut"></button>
+        <button id="delete-account" class="text-button danger" type="button" data-i18n="join.delete.button"></button>
+        <div id="delete-confirm" class="notice" role="group" aria-labelledby="delete-confirm-title" hidden>
+          <strong id="delete-confirm-title" data-i18n="join.delete.title"></strong>
+          <p data-i18n="join.delete.body"></p>
+          <div class="card-actions">
+            <button id="delete-confirm-yes" class="button danger" type="button" data-i18n="join.delete.confirm"></button>
+            <button id="delete-cancel" class="button secondary" type="button" data-i18n="join.delete.cancel"></button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -251,6 +262,43 @@
         <p class="small-note" data-i18n="help.report.privacy"></p>
       </form>
       <div id="report-feedback" class="feedback" role="status" hidden></div>
+      <button class="button secondary full-width" type="button" data-go="privacy" data-i18n="privacy.link"></button>
+    </section>
+
+    <section class="screen" id="privacy" aria-labelledby="privacy-title" hidden>
+      <div class="page-heading">
+        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div><p class="eyebrow" data-i18n="privacy.eyebrow"></p><h1 id="privacy-title" data-i18n="privacy.title"></h1></div>
+      </div>
+      <p class="intro" data-i18n="privacy.intro"></p>
+      <div class="panel prose">
+        <h2 data-i18n="privacy.residents.title"></h2>
+        <p data-i18n="privacy.residents.body"></p>
+        <p data-i18n="privacy.residents.reports"></p>
+        <p data-i18n="privacy.residents.counts"></p>
+      </div>
+      <div class="panel prose">
+        <h2 data-i18n="privacy.collectors.title"></h2>
+        <p data-i18n="privacy.collectors.body"></p>
+        <p data-i18n="privacy.collectors.consent"></p>
+        <p data-i18n="privacy.collectors.delete"></p>
+      </div>
+      <div class="panel prose">
+        <h2 data-i18n="privacy.phone.title"></h2>
+        <p data-i18n="privacy.phone.body"></p>
+      </div>
+      <div class="panel prose">
+        <h2 data-i18n="privacy.keep.title"></h2>
+        <p data-i18n="privacy.keep.body"></p>
+      </div>
+      <div class="panel prose">
+        <h2 data-i18n="privacy.who.title"></h2>
+        <p data-i18n="privacy.who.body"></p>
+        <p data-i18n="privacy.who.contact"></p>
+      </div>
+      <p class="small-note" data-i18n="privacy.updated"></p>
     </section>
 
     <section class="screen" id="admin" aria-labelledby="admin-title" hidden>
@@ -284,6 +332,9 @@
   </nav>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  <footer class="site-footer" data-i18n="app.footer"></footer>
+  <footer class="site-footer">
+    <span data-i18n="app.footer"></span>
+    <a href="#/privacy" data-go="privacy" data-i18n="privacy.link"></a>
+  </footer>
 </body>
 </html>

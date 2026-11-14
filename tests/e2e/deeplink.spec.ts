@@ -17,6 +17,7 @@ test("every screen has its own URL", async ({ page }) => {
     ["#/find", "Find a collector"],
     ["#/join", "Register your service"],
     ["#/help", "Help and feedback"],
+    ["#/privacy", "Privacy"],
     ["#/admin", "Admin overview"]
   ]) {
     await page.goto("./" + hash);

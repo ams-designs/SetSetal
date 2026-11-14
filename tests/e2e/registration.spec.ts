@@ -35,7 +35,9 @@ test.describe("signing in", () => {
     await page.getByLabel("Your phone number").fill("700 0001");
     await page.getByRole("button", { name: "Send code" }).click();
     await expect(page.getByText("We sent a code to +2207000001.")).toBeVisible();
-    expect(codesSent).toEqual([{ phone: "+2207000001" }]);
+    // The proof from the security check goes with the request, so a script
+    // can't run up the SMS bill.
+    expect(codesSent).toEqual([{ phone: "+2207000001", gotrue_meta_security: { captcha_token: "test-captcha-token-1" } }]);
 
     await page.getByLabel("6-digit code").fill("123456");
     await page.getByRole("button", { name: "Sign in" }).click();

@@ -16,7 +16,7 @@ export interface Session {
   lastUsed?: number;
 }
 
-export type AuthResult = "ok" | "unavailable" | "offline" | "invalid" | "rate-limited" | "failed";
+export type AuthResult = "ok" | "unavailable" | "offline" | "invalid" | "rate-limited" | "captcha" | "failed";
 
 // Accepts what people type in The Gambia: 7 local digits, 220…, 00220… or +220…
 export function normalisePhone(input: string): string | null {
@@ -74,16 +74,22 @@ async function failure(response: Response): Promise<AuthResult> {
   } catch {
     // No body.
   }
+  // The "are you a person?" check was missing, used twice or refused.
+  if (/captcha/i.test(message)) return "captcha";
   // Phone sign-in switched off, or no SMS provider set up yet.
   if (/provider|disabled|not enabled/i.test(message)) return "unavailable";
   return response.status >= 500 ? "failed" : "invalid";
 }
 
-export async function requestCode(phone: string): Promise<AuthResult> {
+// captchaToken is the proof from the sign-in check, when the build has one.
+export async function requestCode(phone: string, captchaToken: string | null = null): Promise<AuthResult> {
   if (!backendConfigured) return "unavailable";
   if (!navigator.onLine) return "offline";
   try {
-    const response = await call("auth/v1/otp", { method: "POST", body: JSON.stringify({ phone }) });
+    const response = await call("auth/v1/otp", {
+      method: "POST",
+      body: JSON.stringify(captchaToken ? { phone, gotrue_meta_security: { captcha_token: captchaToken } } : { phone })
+    });
     return response.ok ? "ok" : failure(response);
   } catch {
     return "offline";
@@ -140,6 +146,12 @@ export async function currentSession(): Promise<Session | null> {
     // Network trouble: keep the session and let the next request report it.
   }
   return session;
+}
+
+// Ends the sign-in on this phone only, for an account that no longer exists.
+export function forgetSession(): void {
+  memorySession = null;
+  writeSession(null);
 }
 
 export async function signOut(): Promise<void> {

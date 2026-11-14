@@ -27,7 +27,9 @@ export default defineConfig({
   // Tests run against the production build, because the service worker only
   // exists there.
   webServer: process.env.BASE_URL ? undefined : {
-    command: "npm run build && npm run preview",
+    // Cloudflare's always-pass test key switches the sign-in check on; the
+    // tests replace the Turnstile script with a stub, so nothing is fetched.
+    command: "VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA npm run build && npm run preview",
     url: "http://localhost:4173/",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000

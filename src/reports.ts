@@ -2,6 +2,7 @@
 // the phone and sending them when it is back online. Reports never hold a
 // resident's address or identity (product rule 3).
 import { sendReport, type NewReport } from "./api";
+import { trackMarkedWrong, trackReport } from "./analytics";
 
 const OUTBOX_KEY = "setsetal.outbox.v1";
 const MAX_AGE = 30 * 24 * 60 * 60 * 1000;
@@ -46,9 +47,17 @@ const removeFromOutbox = (id: string): boolean => writeOutbox(readRaw().filter((
 // shown), the report goes without it, and the result says so.
 async function deliver(report: NewReport): Promise<"sent" | "sentUnlinked" | "retry" | "rejected" | "unavailable"> {
   const result = await sendReport(report);
+  if (result === "sent") {
+    // Counted by type only; the message stays in the report.
+    trackReport(report.type);
+    if (report.collector_id) trackMarkedWrong(report.collector_id);
+  }
   if (result !== "link-rejected") return result;
   const unlinked = await sendReport({ ...report, collector_id: null });
-  if (unlinked === "sent") return "sentUnlinked";
+  if (unlinked === "sent") {
+    trackReport(report.type);
+    return "sentUnlinked";
+  }
   return unlinked === "link-rejected" ? "rejected" : unlinked;
 }
 

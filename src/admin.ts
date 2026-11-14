@@ -1,12 +1,16 @@
-// The admin screen: review queue, live listings, reports and history. Admins
-// sign in with the same phone code as collectors. The database decides what
-// an admin may do (RLS and set_collector_status); this screen only shows it.
+// The admin screen: review queue, reports, live and hidden listings, history,
+// areas and usage counts. Admins sign in with the same phone code as
+// collectors. The database decides what an admin may do (RLS and
+// set_collector_status); this screen only shows it.
 import { t, type MessageKey } from "./i18n";
-import { isVehicle, isReportType, isWaste, reportTypeLabel, vehicleLabel, wasteLabel } from "./data/lookups";
+import {
+  OTHER_AREA, isVehicle, isReportType, isWaste, refreshLookups, reportTypeLabel, vehicleLabel, wasteLabel
+} from "./data/lookups";
 import { call } from "./api";
 import { currentSession, type Session } from "./auth";
-import { fetchAreas, type Area, type ListingStatus } from "./collector";
+import type { ListingStatus } from "./collector";
 import { signInThen } from "./join";
+import { reloadListings } from "./listings";
 import { $, escapeHTML, toast } from "./ui";
 
 interface AdminListing {
@@ -35,6 +39,28 @@ interface AdminReport {
   collectors: { name: string } | null;
 }
 
+interface ClosedReport extends AdminReport {
+  status: "resolved" | "dismissed";
+  resolution_note: string | null;
+  resolved_at: string | null;
+}
+
+interface AdminArea {
+  id: string;
+  name: string;
+  district: string;
+  active: boolean;
+  sort_order: number;
+}
+
+// What admin_activity() returns: counts only, nothing about any resident.
+interface Activity {
+  days: number;
+  totals: Partial<Record<"search_no_results" | "contact_tap" | "report_submitted" | "listing_marked_wrong", number>>;
+  no_results: { area: string | null; vehicle: string | null; waste: string | null; count: number }[];
+  contacts: { name: string; call: number; whatsapp: number }[];
+}
+
 interface AuditRow {
   id: number;
   from_status: ListingStatus | null;
@@ -47,8 +73,14 @@ interface AuditRow {
 interface AdminData {
   queue: AdminListing[];
   live: AdminListing[];
+  // Rejected and suspended: not shown to residents, and a decision can be reversed.
+  hidden: AdminListing[];
   reports: AdminReport[];
+  closedReports: ClosedReport[];
   history: AuditRow[];
+  areas: AdminArea[];
+  // Null when the counts couldn't be loaded; the rest of the screen still works.
+  activity: Activity | null;
 }
 
 type Failure = "offline" | "signed-out" | "failed";
@@ -75,21 +107,37 @@ async function isAdmin(session: Session): Promise<boolean> {
 const LISTING_FIELDS = "id,name,vehicle_type,description,consent_at,status,updated_at," +
   "collector_contacts(phone,whatsapp),collector_areas(area_id),collector_waste_types(waste_type_id)";
 
+async function loadActivity(session: Session): Promise<Activity | null> {
+  try {
+    const activity = await getJSON<Activity>(session, "rpc/admin_activity?p_days=30");
+    return activity && typeof activity === "object" && !Array.isArray(activity) && activity.totals ? activity : null;
+  } catch (failure) {
+    if (failure === "signed-out") throw failure;
+    return null;
+  }
+}
+
 async function loadData(session: Session): Promise<AdminData> {
-  const [queue, live, reports, history] = await Promise.all([
+  const [queue, live, hidden, reports, closedReports, history, areaRows, activity] = await Promise.all([
     // Oldest first, so nobody waits longest.
     getJSON<AdminListing[]>(session, `collectors?select=${LISTING_FIELDS}&status=eq.submitted&order=updated_at.asc`),
     getJSON<AdminListing[]>(session, `collectors?select=${LISTING_FIELDS}&status=eq.approved&order=name.asc`),
+    getJSON<AdminListing[]>(session, `collectors?select=${LISTING_FIELDS}&status=in.(rejected,suspended)&order=updated_at.desc`),
     getJSON<AdminReport[]>(session, "reports?select=id,type,message,created_at,collectors(name)&status=eq.open&order=created_at.asc"),
-    getJSON<AuditRow[]>(session, "audit_log?select=id,from_status,to_status,reason,created_at,collectors(name)&order=id.desc&limit=30")
+    getJSON<ClosedReport[]>(session, "reports?select=id,type,message,created_at,status,resolution_note,resolved_at,collectors(name)" +
+      "&status=neq.open&order=resolved_at.desc&limit=30"),
+    getJSON<AuditRow[]>(session, "audit_log?select=id,from_status,to_status,reason,created_at,collectors(name)&order=id.desc&limit=30"),
+    getJSON<AdminArea[]>(session, "areas?select=id,name,district,active,sort_order&order=sort_order.asc,name.asc"),
+    loadActivity(session)
   ]);
-  return { queue, live, reports, history };
+  return { queue, live, hidden, reports, closedReports, history, areas: areaRows, activity };
 }
 
 // "offline": never sent, so nothing changed. "unknown": sent but no clear
 // answer (a timeout or a server error), so it may have gone through. "stale":
 // someone else changed it first.
-type ActionResult = "ok" | "offline" | "unknown" | "signed-out" | "refused" | "stale";
+// "exists": the area is already on the list.
+type ActionResult = "ok" | "offline" | "unknown" | "signed-out" | "refused" | "stale" | "exists";
 
 async function send(session: Session, path: string, init: RequestInit, prefer = "return=minimal"): Promise<[ActionResult, Response | null]> {
   if (!navigator.onLine) return ["offline", null];
@@ -97,31 +145,28 @@ async function send(session: Session, path: string, init: RequestInit, prefer = 
     const response = await call(`rest/v1/${path}`, { ...init, headers: { Prefer: prefer } }, session.accessToken);
     if (response.ok) return ["ok", response];
     if (response.status === 401) return ["signed-out", null];
+    // 409: the server found a newer version than the one this screen showed.
+    if (response.status === 409) return ["stale", null];
     return [response.status >= 500 ? "unknown" : "refused", null];
   } catch {
     return ["unknown", null];
   }
 }
 
-// What the admin saw when they opened a decision, to catch edits made since.
-const shown = new Map<string, string>();
-const snapshot = (listing: AdminListing): string => JSON.stringify([
-  listing.status, listing.updated_at, listing.name, listing.vehicle_type, listing.description, listing.consent_at !== null,
-  contactOf(listing), listing.collector_areas, listing.collector_waste_types
-]);
+// The version of each listing this screen is showing. The decision names it,
+// and the server refuses if the listing has changed since: its details, phone
+// numbers, areas and waste types all change updated_at.
+const shown = new Map<string, { status: ListingStatus; updatedAt: string }>();
 
-// set_collector_status doesn't know which version the admin reviewed, so the
-// listing is fetched again first and the decision stops if it has changed.
 async function setStatus(session: Session, id: string, status: ListingStatus, reason: string): Promise<ActionResult> {
-  try {
-    const current = await getJSON<AdminListing[]>(session, `collectors?select=${LISTING_FIELDS}&id=eq.${encodeURIComponent(id)}`);
-    if (!current[0] || snapshot(current[0]) !== shown.get(id)) return "stale";
-  } catch (failure) {
-    return failure === "signed-out" ? "signed-out" : failure === "offline" ? "offline" : "unknown";
-  }
+  const seen = shown.get(id);
+  if (!seen) return "stale";
   const [result] = await send(session, "rpc/set_collector_status", {
     method: "POST",
-    body: JSON.stringify({ p_collector: id, p_status: status, p_reason: reason })
+    body: JSON.stringify({
+      p_collector: id, p_status: status, p_reason: reason,
+      p_expected_status: seen.status, p_expected_updated_at: seen.updatedAt
+    })
   });
   return result;
 }
@@ -141,9 +186,50 @@ async function closeReport(session: Session, id: string, status: "resolved" | "d
   }
 }
 
+// A closed report can be opened again, for example one dismissed by mistake.
+async function reopenReport(session: Session, id: string): Promise<ActionResult> {
+  const [result, response] = await send(session, `reports?id=eq.${encodeURIComponent(id)}&status=neq.open&select=id`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "open" })
+  }, "return=representation");
+  if (result !== "ok" || !response) return result;
+  try {
+    return ((await response.json()) as unknown[]).length ? "ok" : "stale";
+  } catch {
+    return "unknown";
+  }
+}
+
+// "Brikama Nyambai" → "brikama-nyambai". Accents are dropped.
+export const areaId = (name: string): string =>
+  name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+async function addArea(session: Session, name: string, district: string): Promise<ActionResult> {
+  const id = areaId(name);
+  if (!id || id === OTHER_AREA || id === "all") return "refused";
+  if (areas.some((area) => area.id === id)) return "exists";
+  const sortOrder = Math.max(0, ...areas.map((area) => area.sort_order)) + 1;
+  const [result] = await send(session, "areas", {
+    method: "POST",
+    body: JSON.stringify({ id, name, district, sort_order: sortOrder })
+  });
+  // 409 here is a duplicate id, added by another admin since this screen loaded.
+  return result === "stale" ? "exists" : result;
+}
+
+// Areas are never deleted, because listings refer to them: an area no longer
+// served is switched off, and collectors and residents stop being offered it.
+async function setAreaActive(session: Session, id: string, active: boolean): Promise<ActionResult> {
+  const [result] = await send(session, `areas?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ active })
+  });
+  return result;
+}
+
 // Rendering ------------------------------------------------------------------------
 
-let areas: Area[] = [];
+let areas: AdminArea[] = [];
 const areaName = (id: string): string => areas.find((area) => area.id === id)?.name ?? id;
 const when = (iso: string): string =>
   new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
@@ -155,24 +241,30 @@ const row = (label: string, value: string) =>
   `<div class="detail-row"><strong>${escapeHTML(label)}</strong><p>${escapeHTML(value)}</p></div>`;
 
 // The decisions offered for each list, with the status each one sets.
-const DECISIONS: Record<"queue" | "live", { status: ListingStatus; label: MessageKey; style: string }[]> = {
-  queue: [
+type Decision = "approved" | "rejected" | "suspended";
+
+const DECISIONS: Record<ListingStatus, { status: Decision; label: MessageKey; style: string }[]> = {
+  submitted: [
     { status: "approved", label: "admin.approve", style: "primary" },
     { status: "rejected", label: "admin.reject", style: "secondary" }
   ],
-  live: [{ status: "suspended", label: "admin.suspend", style: "secondary" }]
+  approved: [{ status: "suspended", label: "admin.suspend", style: "secondary" }],
+  // Reversing a decision: both go live again, with a new reason on record.
+  rejected: [{ status: "approved", label: "admin.approve", style: "primary" }],
+  suspended: [{ status: "approved", label: "admin.reinstate", style: "primary" }]
 };
 
-function listingCard(listing: AdminListing, list: "queue" | "live"): string {
+function listingCard(listing: AdminListing): string {
   const contact = contactOf(listing);
   const waste = listing.collector_waste_types.map((link) => link.waste_type_id).filter(isWaste).map(wasteLabel);
-  const buttons = DECISIONS[list].map((decision) => `
+  const hidden = listing.status === "rejected" || listing.status === "suspended";
+  const buttons = DECISIONS[listing.status].map((decision) => `
           <button class="button ${decision.style}" type="button" data-decide="${decision.status}"
             data-id="${escapeHTML(listing.id)}" data-name="${escapeHTML(listing.name)}">${escapeHTML(t(decision.label))}</button>`).join("");
   return `
       <article class="panel admin-card">
         <h3>${escapeHTML(listing.name)}</h3>
-        <p class="muted">${escapeHTML(t("admin.updated", { date: when(listing.updated_at) }))}</p>
+        <p class="muted">${hidden ? `${escapeHTML(t(`join.status.${listing.status}`))} · ` : ""}${escapeHTML(t("admin.updated", { date: when(listing.updated_at) }))}</p>
         ${row(t("profile.vehicle"), isVehicle(listing.vehicle_type) ? vehicleLabel(listing.vehicle_type) : listing.vehicle_type)}
         ${row(t("profile.area"), listing.collector_areas.map((link) => areaName(link.area_id)).join(", "))}
         ${row(t("profile.waste"), waste.join(", "))}
@@ -211,6 +303,99 @@ function historyItem(entry: AuditRow): string {
         </li>`;
 }
 
+function closedReportItem(report: ClosedReport): string {
+  const type = isReportType(report.type) ? reportTypeLabel(report.type) : report.type;
+  const about = report.collectors ? ` · ${escapeHTML(t("admin.aboutListing", { name: report.collectors.name }))}` : "";
+  return `
+        <li>
+          <strong>${escapeHTML(t("admin.reportLabel", { type }))}</strong>${about}:
+          ${escapeHTML(t(report.status === "resolved" ? "admin.reportResolved" : "admin.reportDismissed"))}
+          <span class="muted">(${escapeHTML(when(report.resolved_at ?? report.created_at))})</span>
+          <br><span class="report-message">${escapeHTML(report.message)}</span>
+          ${report.resolution_note ? `<br><span>${escapeHTML(t("admin.noteWas", { note: report.resolution_note }))}</span>` : ""}
+          <br><button class="text-button" type="button" data-reopen-report data-id="${escapeHTML(report.id)}">${escapeHTML(t("admin.reopen"))}</button>
+        </li>`;
+}
+
+// Listing decisions and report decisions in one list, newest first.
+function historyList(data: AdminData): string {
+  const items = [
+    ...data.history.map((entry) => ({ at: entry.created_at, html: historyItem(entry) })),
+    ...data.closedReports.map((report) => ({ at: report.resolved_at ?? report.created_at, html: closedReportItem(report) }))
+  ].sort((a, b) => b.at.localeCompare(a.at));
+  return `<ul class="history-list">${items.map((item) => item.html).join("")}</ul>`;
+}
+
+function areaRow(area: AdminArea): string {
+  return `
+        <li>
+          <span><strong>${escapeHTML(area.name)}</strong> <span class="muted">· ${escapeHTML(area.district)} · ${
+            escapeHTML(t(area.active ? "admin.areas.active" : "admin.areas.inactive"))}</span></span>
+          <button class="button secondary" type="button" data-area-active="${area.active ? "0" : "1"}" data-id="${escapeHTML(area.id)}"
+            aria-label="${escapeHTML(t(area.active ? "admin.areas.turnOffLabel" : "admin.areas.turnOnLabel", { name: area.name }))}">${
+            escapeHTML(t(area.active ? "admin.areas.turnOff" : "admin.areas.turnOn"))}</button>
+        </li>`;
+}
+
+function areasSection(data: AdminData): string {
+  return `
+      <section class="admin-section">
+        <h2>${escapeHTML(t("admin.areas.title"))} <span class="muted">(${data.areas.filter((area) => area.active).length})</span></h2>
+        <p class="muted">${escapeHTML(t("admin.areas.intro"))}</p>
+        <ul class="area-list">${data.areas.map(areaRow).join("")}</ul>
+        <form id="area-form" class="panel form-panel">
+          <h3>${escapeHTML(t("admin.areas.addTitle"))}</h3>
+          <label for="area-name">${escapeHTML(t("admin.areas.name"))}</label>
+          <input id="area-name" name="name" required minlength="2" maxlength="80" autocomplete="off">
+          <label for="area-district">${escapeHTML(t("admin.areas.district"))}</label>
+          <input id="area-district" name="district" required maxlength="80" value="${escapeHTML(t("admin.areas.districtDefault"))}" autocomplete="off">
+          <button class="button secondary" type="submit">${escapeHTML(t("admin.areas.add"))}</button>
+        </form>
+      </section>`;
+}
+
+const filterLabel = (kind: "area" | "vehicle" | "waste", value: string | null): string => {
+  if (!value || value === "all") return t(kind === "area" ? "find.areaAll" : kind === "vehicle" ? "find.vehicleAll" : "find.wasteAll");
+  if (kind === "area") return value === OTHER_AREA ? t("lookup.area.other") : areaName(value);
+  if (kind === "vehicle") return isVehicle(value) ? vehicleLabel(value) : value;
+  return isWaste(value) ? wasteLabel(value) : value;
+};
+
+function activitySection(activity: Activity | null): string {
+  if (!activity) {
+    return `
+      <section class="admin-section">
+        <h2>${escapeHTML(t("admin.activity.title"))}</h2>
+        <p class="muted">${escapeHTML(t("admin.activity.unavailable"))}</p>
+      </section>`;
+  }
+  const total = (name: keyof Activity["totals"]) => activity.totals[name] ?? 0;
+  const stat = (label: MessageKey, value: number) =>
+    `<article class="stat-card"><span>${escapeHTML(t(label))}</span><strong>${value}</strong></article>`;
+  const contacts = activity.contacts.length ? `
+        <h3>${escapeHTML(t("admin.activity.contactsTitle"))}</h3>
+        <ul class="history-list plain-list">${activity.contacts.map((row) => `
+          <li><strong>${escapeHTML(row.name)}</strong>: ${escapeHTML(t("admin.activity.contactRow", { calls: row.call, whatsapp: row.whatsapp }))}</li>`).join("")}
+        </ul>` : "";
+  const searches = activity.no_results.length ? `
+        <h3>${escapeHTML(t("admin.activity.noResultsTitle"))}</h3>
+        <ul class="history-list plain-list">${activity.no_results.map((row) => `
+          <li>${escapeHTML([filterLabel("area", row.area), filterLabel("vehicle", row.vehicle), filterLabel("waste", row.waste)].join(" · "))}
+            <span class="muted">(${escapeHTML(t("admin.activity.times", { count: row.count }))})</span></li>`).join("")}
+        </ul>` : "";
+  return `
+      <section class="admin-section">
+        <h2>${escapeHTML(t("admin.activity.title"))}</h2>
+        <p class="muted">${escapeHTML(t("admin.activity.intro", { days: activity.days }))}</p>
+        <div class="stats-grid">
+          ${stat("admin.activity.contacts", total("contact_tap"))}
+          ${stat("admin.activity.noResults", total("search_no_results"))}
+          ${stat("admin.activity.reports", total("report_submitted"))}
+          ${stat("admin.activity.markedWrong", total("listing_marked_wrong"))}
+        </div>${contacts}${searches}
+      </section>`;
+}
+
 function section(title: MessageKey, count: number, body: string, empty: MessageKey): string {
   return `
       <section class="admin-section">
@@ -220,18 +405,25 @@ function section(title: MessageKey, count: number, body: string, empty: MessageK
 }
 
 function renderData(data: AdminData): void {
+  areas = data.areas;
   shown.clear();
-  [...data.queue, ...data.live].forEach((listing) => shown.set(listing.id, snapshot(listing)));
+  [...data.queue, ...data.live, ...data.hidden].forEach((listing) =>
+    shown.set(listing.id, { status: listing.status, updatedAt: listing.updated_at }));
+  const cards = (listings: AdminListing[]) => listings.map(listingCard).join("");
+  const decisions = data.history.length + data.closedReports.length;
   $("#admin-content").innerHTML = `
       <div class="stats-grid">
         <article class="stat-card"><span>${escapeHTML(t("admin.pending"))}</span><strong>${data.queue.length}</strong></article>
         <article class="stat-card"><span>${escapeHTML(t("admin.openReports"))}</span><strong>${data.reports.length}</strong></article>
         <article class="stat-card"><span>${escapeHTML(t("admin.live"))}</span><strong>${data.live.length}</strong></article>
       </div>
-      ${section("admin.queueTitle", data.queue.length, data.queue.map((listing) => listingCard(listing, "queue")).join(""), "admin.queueEmpty")}
+      ${section("admin.queueTitle", data.queue.length, cards(data.queue), "admin.queueEmpty")}
       ${section("admin.reportsTitle", data.reports.length, data.reports.map(reportCard).join(""), "admin.reportsEmpty")}
-      ${section("admin.liveTitle", data.live.length, data.live.map((listing) => listingCard(listing, "live")).join(""), "admin.liveEmpty")}
-      ${section("admin.historyTitle", data.history.length, `<ul class="history-list">${data.history.map(historyItem).join("")}</ul>`, "admin.historyEmpty")}
+      ${section("admin.liveTitle", data.live.length, cards(data.live), "admin.liveEmpty")}
+      ${section("admin.hiddenTitle", data.hidden.length, cards(data.hidden), "admin.hiddenEmpty")}
+      ${section("admin.historyTitle", decisions, historyList(data), "admin.historyEmpty")}
+      ${areasSection(data)}
+      ${activitySection(data.activity)}
       <button class="button secondary full-width" type="button" id="admin-refresh">${escapeHTML(t("admin.refresh"))}</button>`;
 }
 
@@ -273,10 +465,6 @@ export async function renderAdmin(): Promise<void> {
       if (token === renderToken) message("admin.notAdmin");
       return;
     }
-    if (!areas.length) {
-      const result = await fetchAreas();
-      if (result.ok) areas = result.value;
-    }
     const data = await loadData(session);
     if (token === renderToken) renderData(data);
   } catch (failure) {
@@ -287,8 +475,6 @@ export async function renderAdmin(): Promise<void> {
 }
 
 // Decisions ------------------------------------------------------------------------
-
-type Decision = "approved" | "rejected" | "suspended";
 
 const DONE: Record<Decision, MessageKey> = {
   approved: "admin.done.approved",
@@ -301,7 +487,8 @@ const ACTION_ERRORS: Record<Exclude<ActionResult, "ok">, MessageKey> = {
   unknown: "admin.error.unknown",
   "signed-out": "admin.error.signedOut",
   refused: "admin.error.refused",
-  stale: "admin.error.stale"
+  stale: "admin.error.stale",
+  exists: "admin.areas.exists"
 };
 
 function openDecision(button: HTMLElement): void {
@@ -326,7 +513,7 @@ function openDecision(button: HTMLElement): void {
 let acting = false;
 
 // One decision at a time, with every button disabled while it is sent.
-async function act(task: (session: Session) => Promise<ActionResult>, done: MessageKey): Promise<void> {
+async function act(task: (session: Session) => Promise<ActionResult>, done: MessageKey, after?: () => void): Promise<void> {
   if (acting) return;
   acting = true;
   const content = $("#admin-content");
@@ -343,8 +530,11 @@ async function act(task: (session: Session) => Promise<ActionResult>, done: Mess
     buttons.forEach((button) => { button.disabled = false; });
   }
   toast(t(result === "ok" ? done : ACTION_ERRORS[result]));
+  // Keep what was typed when the area is already on the list.
+  if (result === "exists") return;
   // Show the latest state whenever the outcome isn't simply "not sent".
   if (result !== "offline" && result !== "signed-out") await renderAdmin();
+  if (result === "ok") after?.();
 }
 
 export function bindAdmin(): void {
@@ -366,10 +556,39 @@ export function bindAdmin(): void {
       void act((session) => closeReport(session, id, status, note), status === "resolved" ? "admin.done.resolved" : "admin.done.dismissed");
       return;
     }
+    const reopen = target.closest<HTMLElement>("[data-reopen-report]");
+    if (reopen) {
+      const id = reopen.dataset.id ?? "";
+      void act((session) => reopenReport(session, id), "admin.done.reopened");
+      return;
+    }
+    const areaToggle = target.closest<HTMLElement>("[data-area-active]");
+    if (areaToggle) {
+      const id = areaToggle.dataset.id ?? "";
+      const active = areaToggle.dataset.areaActive === "1";
+      void act((session) => setAreaActive(session, id, active), active ? "admin.areas.turnedOn" : "admin.areas.turnedOff",
+        () => void refreshLookups());
+      return;
+    }
     if (target.closest("#admin-refresh")) void renderAdmin();
     if (target.closest("#admin-sign-in")) signInThen("admin");
   });
   content.addEventListener("submit", (event) => {
+    const areaForm = (event.target as Element).closest<HTMLFormElement>("#area-form");
+    if (areaForm) {
+      event.preventDefault();
+      const fields = new FormData(areaForm);
+      const name = String(fields.get("name") ?? "").trim().replace(/\s+/g, " ");
+      const district = String(fields.get("district") ?? "").trim();
+      const input = areaForm.querySelector<HTMLInputElement>("#area-name");
+      if (!areaId(name) || !district) {
+        input?.setCustomValidity(t("admin.areas.nameNeeded"));
+        input?.reportValidity();
+        return;
+      }
+      void act((session) => addArea(session, name, district), "admin.areas.added", () => void refreshLookups());
+      return;
+    }
     const form = (event.target as Element).closest<HTMLFormElement>(".decision-form");
     if (!form) return;
     event.preventDefault();
@@ -383,9 +602,11 @@ export function bindAdmin(): void {
     textarea?.setCustomValidity("");
     const status = form.dataset.status as Decision;
     const id = form.dataset.id ?? "";
-    void act((session) => setStatus(session, id, status, reason), DONE[status]);
+    // Residents' phones show the change the next time they load listings; this one now.
+    void act((session) => setStatus(session, id, status, reason), DONE[status], () => void reloadListings());
   });
   content.addEventListener("input", (event) => {
-    if ((event.target as Element).matches(".decision-form textarea")) (event.target as HTMLTextAreaElement).setCustomValidity("");
+    const field = event.target as HTMLInputElement | HTMLTextAreaElement;
+    if (field.matches(".decision-form textarea, #area-name")) field.setCustomValidity("");
   });
 }

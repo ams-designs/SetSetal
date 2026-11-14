@@ -1,6 +1,6 @@
 import { $, $$ } from "./ui";
 
-export const SCREENS = ["home", "find", "profile", "join", "preview", "help", "admin"] as const;
+export const SCREENS = ["home", "find", "profile", "join", "preview", "help", "privacy", "admin"] as const;
 export type ScreenId = (typeof SCREENS)[number];
 
 export interface Route {
@@ -21,11 +21,12 @@ const PATHS: Record<ScreenId, string> = {
   join: "/join",
   preview: "/join/preview",
   help: "/help",
+  privacy: "/privacy",
   admin: "/admin"
 };
 
 // Bottom-nav item that stays highlighted on screens without their own item.
-const NAV_PARENT: Partial<Record<ScreenId, ScreenId>> = { profile: "find", preview: "join" };
+const NAV_PARENT: Partial<Record<ScreenId, ScreenId>> = { profile: "find", preview: "join", privacy: "help" };
 
 export const isScreen = (value: string): value is ScreenId =>
   (SCREENS as readonly string[]).includes(value);

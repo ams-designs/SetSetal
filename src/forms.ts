@@ -1,6 +1,6 @@
 // The Help screen's feedback form.
 import { t } from "./i18n";
-import { REPORT_TYPES, isReportType, reportTypeLabel } from "./data/lookups";
+import { isReportType, reportTypeLabel, reportTypes } from "./data/lookups";
 import { fillSelect } from "./listings";
 import { submitReport } from "./reports";
 import { $, escapeHTML } from "./ui";
@@ -68,9 +68,10 @@ async function handleReport(event: SubmitEvent): Promise<void> {
   }
 }
 
+// Runs at start-up and again when the lists arrive from the server.
 export function populateForms(): void {
   fillSelect($<HTMLSelectElement>("#report-type"),
-    REPORT_TYPES.map((id) => ({ value: id, label: reportTypeLabel(id) })));
+    reportTypes().map((id) => ({ value: id, label: reportTypeLabel(id) })));
 }
 
 export function bindForms(): void {

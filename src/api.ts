@@ -51,7 +51,26 @@ export async function call(path: string, init: RequestInit = {}, token?: string)
 
 // Ordered by name: never by anything paid (product rule 5).
 export const fetchPublicCollectors = (): Promise<PublicCollectorRow[]> =>
-  get("public_collectors?select=id,name,vehicle_type,description,phone,whatsapp,areas,waste_types&order=name.asc");
+  get("public_collectors?select=id,name,vehicle_type,description,phone,whatsapp,areas,waste_types,available_today&order=name.asc");
+
+// Areas, vehicle types, waste types and report types in one request.
+export const fetchLookups = (): Promise<unknown> => get("rpc/app_lookups");
+
+export type UsageEvent = Pick<Database["public"]["Tables"]["events"]["Insert"],
+  "name" | "area" | "vehicle" | "waste" | "channel" | "report_type" | "collector_id">;
+
+// Adds one anonymous usage count. Nothing is read back, nothing is retried,
+// and a failure is silent: counting must never get in a resident's way.
+// keepalive lets it finish while the phone switches to the dialler.
+export function sendEvent(event: UsageEvent): void {
+  if (!backendConfigured || !navigator.onLine) return;
+  void fetch(`${url}/rest/v1/events`, {
+    method: "POST",
+    headers: { apikey: key ?? "", "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify(event),
+    keepalive: true
+  }).catch(() => {});
+}
 
 export type NewReport = Pick<Database["public"]["Tables"]["reports"]["Insert"], "type" | "message" | "collector_id">;
 

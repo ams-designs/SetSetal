@@ -1,10 +1,16 @@
 // The Join screen for collectors: sign in with an SMS code, fill in the
 // listing, check the preview, submit it for review, then follow its status.
 import { t, type MessageKey } from "./i18n";
-import { isVehicle, isWaste, vehicleLabel, wasteLabel, type VehicleId, type WasteId } from "./data/lookups";
-import { fillSelect, iconFor, vehicleOptions, wasteOptions } from "./listings";
-import { currentSession, normalisePhone, requestCode, signOut, verifyCode, type AuthResult } from "./auth";
-import { fetchAreas, fetchMyListing, saveMyListing, type Area, type ListingDraft, type MyListing } from "./collector";
+import {
+  areaLabel, areas, freshLookups, isVehicle, isWaste, vehicleLabel, wasteLabel, type VehicleId, type WasteId
+} from "./data/lookups";
+import { fillSelect, iconFor, reloadListings, vehicleOptions, wasteOptions } from "./listings";
+import { currentSession, forgetSession, normalisePhone, requestCode, signOut, verifyCode, type AuthResult } from "./auth";
+import { captchaEnabled, showCaptcha, takeCaptchaToken } from "./captcha";
+import {
+  deleteAccount, fetchMyListing, saveMyListing, setAvailability,
+  type ActionResult, type ListingDraft, type MyListing
+} from "./collector";
 import { clearAdmin } from "./admin";
 import { go } from "./router";
 import { $, $$, escapeHTML, toast } from "./ui";
@@ -16,7 +22,6 @@ let editing = false;
 // The form already holds the collector's input (for example after the preview).
 let formFilled = false;
 let myListing: MyListing | null = null;
-let areas: Area[] = [];
 // The number the sign-in code was sent to.
 let codePhone = "";
 // Whose listing the state above belongs to.
@@ -46,6 +51,7 @@ function resetCollectorState(): void {
   formFilled = false;
   loadedFor = null;
   $<HTMLFormElement>("#registration-form").reset();
+  $("#delete-confirm").hidden = true;
 }
 
 export const hasDraft = (): boolean => draft !== null;
@@ -65,12 +71,16 @@ const checkboxes = (name: string, items: { value: string; label: string }[]): st
         <span>${escapeHTML(label)}</span>
       </label>`).join("");
 
+// Runs at start-up and again when the lists arrive from the server. What the
+// collector has already chosen is kept.
 export function populateJoin(): void {
   fillSelect($<HTMLSelectElement>("#provider-vehicle"), vehicleOptions());
+  const ticked = $$<HTMLInputElement>("#provider-waste-options input:checked").map((input) => input.value);
   $("#provider-waste-options").innerHTML = checkboxes("waste", wasteOptions());
+  for (const input of $$<HTMLInputElement>("#provider-waste-options input")) input.checked = ticked.includes(input.value);
 }
 
-const areaName = (id: string): string => areas.find((area) => area.id === id)?.name ?? id;
+const areaName = areaLabel;
 
 function feedback(selector: string, key: MessageKey | null): void {
   const box = $(selector);
@@ -85,6 +95,7 @@ function showSignIn(): void {
   $("#signin-admin-note").hidden = returnTo !== "admin";
   $("#signin-phone-form").hidden = Boolean(codePhone);
   $("#signin-code-form").hidden = !codePhone;
+  if (captchaEnabled) void showCaptcha($("#signin-captcha"));
 }
 
 const SIGNIN_ERRORS: Record<Exclude<AuthResult, "ok">, MessageKey> = {
@@ -92,6 +103,7 @@ const SIGNIN_ERRORS: Record<Exclude<AuthResult, "ok">, MessageKey> = {
   offline: "join.signin.error.offline",
   invalid: "join.signin.error.invalidPhone",
   "rate-limited": "join.signin.error.rateLimited",
+  captcha: "join.signin.error.captcha",
   failed: "join.signin.error.failed"
 };
 
@@ -115,7 +127,15 @@ async function handlePhone(event: SubmitEvent): Promise<void> {
     $("#signin-phone").focus();
     return;
   }
-  const result = await busy($<HTMLButtonElement>("#signin-send"), "join.signin.sending", () => requestCode(phone));
+  const result = await busy($<HTMLButtonElement>("#signin-send"), "join.signin.sending", async () => {
+    if (!captchaEnabled) return requestCode(phone);
+    const captchaToken = await takeCaptchaToken();
+    return captchaToken ? requestCode(phone, captchaToken) : "captcha-wait";
+  });
+  if (result === "captcha-wait") {
+    feedback("#signin-feedback", "join.signin.error.captchaWait");
+    return;
+  }
   if (result !== "ok") {
     feedback("#signin-feedback", SIGNIN_ERRORS[result]);
     return;
@@ -179,7 +199,13 @@ function showStatus(listing: MyListing): void {
         <div class="notice">
           <strong>${escapeHTML(t(`join.status.${listing.status}`))}</strong>
           ${lines}
-        </div>
+        </div>${listing.status === "approved" ? `
+        <div class="today-panel">
+          <strong>${escapeHTML(t(listing.availableToday ? "join.today.on" : "join.today.off"))}</strong>
+          <p class="small-note">${escapeHTML(t("join.today.note"))}</p>
+          <button class="button ${listing.availableToday ? "secondary" : "primary"} full-width" type="button" id="toggle-today"
+            data-available="${listing.availableToday ? "0" : "1"}">${escapeHTML(t(listing.availableToday ? "join.today.turnOff" : "join.today.turnOn"))}</button>
+        </div>` : ""}
         <button class="button secondary full-width" type="button" id="edit-listing">${escapeHTML(t("join.status.edit"))}</button>
         <p class="small-note">${escapeHTML(t(listing.status === "suspended" ? "join.status.suspendedEditNote" : "join.status.editNote"))}</p>
       </article>`;
@@ -196,11 +222,10 @@ function showLoadError(): void {
 
 // Form ---------------------------------------------------------------------------
 
+// A collector chooses from the areas the server offers now, never from a list
+// saved on the phone, which may be out of date.
 async function ensureAreas(): Promise<boolean> {
-  if (areas.length) return true;
-  const result = await fetchAreas();
-  if (result.ok) areas = result.value;
-  return areas.length > 0;
+  return (await freshLookups()) && areas().length > 0;
 }
 
 function setGroupError(group: "areas" | "waste", show: boolean): void {
@@ -240,7 +265,7 @@ async function showForm(signedInPhone: string): Promise<void> {
     return;
   }
   if (!$("#provider-area-options").querySelector("input")) {
-    $("#provider-area-options").innerHTML = checkboxes("area", areas.map((area) => ({ value: area.id, label: area.name })));
+    $("#provider-area-options").innerHTML = checkboxes("area", areas().map((area) => ({ value: area.id, label: area.name })));
   }
   if (!formFilled) {
     fillForm(myListing, signedInPhone);
@@ -258,7 +283,7 @@ function handleRegistration(event: SubmitEvent): void {
   const whatsappInput = String(data.get("whatsapp") ?? "").trim();
   const whatsapp = whatsappInput ? normalisePhone(whatsappInput) : "";
   const vehicle = String(data.get("vehicle") ?? "");
-  const chosenAreas = data.getAll("area").map(String).filter((id) => areas.some((area) => area.id === id));
+  const chosenAreas = data.getAll("area").map(String).filter((id) => areas().some((area) => area.id === id));
   const waste = data.getAll("waste").map(String).filter(isWaste);
 
   const error = (key: MessageKey, focus: string) => {
@@ -355,6 +380,7 @@ async function submitListing(): Promise<void> {
     loadedFor = savedFor;
     go("join");
     toast(t(SAVED[result.status]));
+    void reloadListings();
   } finally {
     submitting = false;
   }
@@ -405,6 +431,41 @@ export async function renderJoin(): Promise<void> {
   }
 }
 
+const ACTION_ERRORS: Record<Exclude<ActionResult, "ok">, MessageKey> = {
+  offline: "join.action.offline",
+  unknown: "join.action.unknown",
+  "signed-out": "preview.error.signedOut",
+  failed: "join.action.failed"
+};
+
+async function toggleToday(button: HTMLButtonElement): Promise<void> {
+  const available = button.dataset.available === "1";
+  const result = await busy(button, "join.today.saving", async () => {
+    const session = await currentSession();
+    return session ? setAvailability(session, available) : "signed-out";
+  });
+  toast(t(result === "ok" ? (available ? "join.today.savedOn" : "join.today.savedOff") : ACTION_ERRORS[result]));
+  if (result === "offline") return;
+  await renderJoin();
+  void reloadListings();
+}
+
+async function handleDeleteAccount(): Promise<void> {
+  const result = await busy($<HTMLButtonElement>("#delete-confirm-yes"), "join.delete.deleting", async () => {
+    const session = await currentSession();
+    return session ? deleteAccount(session) : "signed-out";
+  });
+  if (result !== "ok") {
+    toast(t(ACTION_ERRORS[result]));
+    return;
+  }
+  forgetSession();
+  resetCollectorState();
+  toast(t("join.delete.done"));
+  await renderJoin();
+  void reloadListings();
+}
+
 async function handleSignOut(): Promise<void> {
   await signOut();
   resetCollectorState();
@@ -424,7 +485,10 @@ export function bindJoin(): void {
   }
   $("#my-listing").addEventListener("click", (event) => {
     const target = event.target as Element;
-    if (target.closest("#edit-listing")) {
+    const today = target.closest<HTMLButtonElement>("#toggle-today");
+    if (today) {
+      void toggleToday(today);
+    } else if (target.closest("#edit-listing")) {
       editing = true;
       formFilled = false;
       void renderJoin();
@@ -434,4 +498,13 @@ export function bindJoin(): void {
   });
   $("#submit-listing").addEventListener("click", () => void submitListing());
   $("#sign-out").addEventListener("click", () => void handleSignOut());
+  $("#delete-account").addEventListener("click", () => {
+    $("#delete-confirm").hidden = false;
+    $("#delete-cancel").focus();
+  });
+  $("#delete-cancel").addEventListener("click", () => {
+    $("#delete-confirm").hidden = true;
+    $("#delete-account").focus();
+  });
+  $("#delete-confirm-yes").addEventListener("click", () => void handleDeleteAccount());
 }

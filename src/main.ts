@@ -1,6 +1,8 @@
 import "./styles.css";
 import { detectLocale, setLocale, t, translatePage, type MessageKey } from "./i18n";
 import { bindAdmin, renderAdmin } from "./admin";
+import { trackContact } from "./analytics";
+import { loadLookups } from "./data/lookups";
 import { bindForms, populateForms, setReportTarget } from "./forms";
 import { bindJoin, hasDraft, leaveJoin, populateJoin, renderJoin, renderPreview } from "./join";
 import { bindInstall } from "./install";
@@ -31,8 +33,21 @@ function beforeShow(route: Route): void {
   if (route.screen === "admin") void renderAdmin();
 }
 
+// Runs whenever the lists of areas, vehicles, waste and report types change:
+// from the cache, then from the server. Choices already made are kept.
+function lookupsChanged(): void {
+  populateFilters();
+  populateForms();
+  populateJoin();
+  renderCollectors();
+  const route = currentRoute();
+  if (route.screen === "profile" && findCollector(route.id)) renderProfile(route.id);
+}
+
 // Runs whenever the listings change: from the cache, then from the server.
 function listingsChanged(): void {
+  // The area filter offers the samples' towns or the real areas.
+  populateFilters();
   renderCollectors();
   const note = $("#help-listings-note");
   note.dataset.i18n = showingDemos() ? "help.using.demo" : "help.using.real";
@@ -75,6 +90,14 @@ function bindNavigation(): void {
       return;
     }
 
+    // Counts the tap, never the person; the link then opens as usual.
+    const contact = target.closest<HTMLElement>("[data-contact]");
+    if (contact) {
+      const channel = contact.dataset.contact;
+      if (contact.dataset.id && (channel === "call" || channel === "whatsapp")) trackContact(contact.dataset.id, channel);
+      return;
+    }
+
     if (target.closest("[data-back]")) back();
   });
 
@@ -85,7 +108,7 @@ function bindNavigation(): void {
 
   $("#search-form").addEventListener("submit", (event) => {
     event.preventDefault();
-    renderCollectors();
+    renderCollectors({ searched: true });
   });
 
   $("#clear-filters").addEventListener("click", () => {
@@ -107,6 +130,7 @@ function init(): void {
   bindInstall();
   startRouter({ resolve, beforeShow });
   renderCollectors();
+  void loadLookups(lookupsChanged);
   void loadListings(listingsChanged);
   startOutbox(({ sent, dropped }) => {
     const messages = [
