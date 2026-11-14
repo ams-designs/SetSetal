@@ -18,7 +18,7 @@ select throws_ok($$insert into public.collectors (owner, name, vehicle_type, sta
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000b"}', true);
 
-select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', 'Looks fine to me')$$,
+select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', 'Looks fine to me', (select status from public.collectors where id = '10000000-0000-0000-0000-000000000001'), (select updated_at from public.collectors where id = '10000000-0000-0000-0000-000000000001'))$$,
   '42501', null, 'an owner cannot approve their own listing');
 select is((select count(*)::int from public.audit_log where collector_id = '10000000-0000-0000-0000-000000000001'), 1,
   'owner can read their listing''s history');
@@ -30,9 +30,9 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 
 select throws_ok($$update public.collectors set status = 'approved' where id = '10000000-0000-0000-0000-000000000001'$$,
   '42501', null, 'even an admin cannot set a status directly');
-select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', '  ')$$,
+select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', '  ', (select status from public.collectors where id = '10000000-0000-0000-0000-000000000001'), (select updated_at from public.collectors where id = '10000000-0000-0000-0000-000000000001'))$$,
   '22023', null, 'a status change needs a reason');
-select lives_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', 'Met in person at Brikama market')$$,
+select lives_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', 'Met in person at Brikama market', (select status from public.collectors where id = '10000000-0000-0000-0000-000000000001'), (select updated_at from public.collectors where id = '10000000-0000-0000-0000-000000000001'))$$,
   'an admin approves with a reason');
 select is((select status::text from public.collectors where id = '10000000-0000-0000-0000-000000000001'), 'approved',
   'the listing is approved');
@@ -41,7 +41,7 @@ select is(
     where collector_id = '10000000-0000-0000-0000-000000000001' order by id desc limit 1),
   array['submitted', 'approved', 'Met in person at Brikama market', '00000000-0000-0000-0000-00000000000a'],
   'the approval is audited with who, what and why');
-select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', 'Again')$$,
+select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'approved', 'Again', (select status from public.collectors where id = '10000000-0000-0000-0000-000000000001'), (select updated_at from public.collectors where id = '10000000-0000-0000-0000-000000000001'))$$,
   'P0002', null, 'approving an approved listing is refused');
 select throws_ok($$update public.audit_log set reason = 'Edited'$$, '42501', null, 'nobody can edit the audit log');
 select throws_ok($$delete from public.audit_log$$, '42501', null, 'nobody can delete from the audit log');
@@ -60,7 +60,7 @@ set local role anon;
 select set_config('request.jwt.claims', '', true);
 
 select throws_ok($$select 1 from public.audit_log$$, '42501', null, 'anon cannot read the audit log');
-select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'suspended', 'Anon attempt')$$,
+select throws_ok($$select public.set_collector_status('10000000-0000-0000-0000-000000000001', 'suspended', 'Anon attempt', (select status from public.collectors where id = '10000000-0000-0000-0000-000000000001'), (select updated_at from public.collectors where id = '10000000-0000-0000-0000-000000000001'))$$,
   '42501', null, 'anon cannot call set_collector_status');
 
 -- Service role ---------------------------------------------------------------

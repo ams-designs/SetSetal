@@ -54,8 +54,8 @@ select is((select count(*)::int from public.collectors where owner = '00000000-0
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000000a"}', true);
-select public.set_collector_status(
-  (select id from public.collectors where owner = '00000000-0000-0000-0000-00000000000b'), 'approved', 'Met in person');
+select public.set_collector_status(c.id, 'approved', 'Met in person', c.status, c.updated_at)
+  from public.collectors c where c.owner = '00000000-0000-0000-0000-00000000000b';
 
 reset role;
 set local role authenticated;
