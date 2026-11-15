@@ -34,17 +34,15 @@ SetSetal aims to:
 
 ## Current Prototype
 
-The front-end prototype demonstrates the intended user journey and interface. Depending on the current files, it may include:
+The app is built for a pilot in Brikama. Until the first real collector is approved it shows labelled demonstration listings.
 
-- Welcome and resident/collector entry points.
-- Sample collector listings and filters.
-- Collector detail pages.
-- A collector registration form and local preview.
-- A feedback or reporting form.
-- Basic navigation and responsive layouts.
-- A PWA manifest and service worker for app-shell caching.
+**How to use it, with screenshots: [docs/guide/README.md](docs/guide/README.md).**
 
-**Important:** Sample collectors are fictional examples for interface testing. They are not verified businesses or endorsements. Registration previews are not sent to a server. Feedback is sent to the SetSetal team without your name or contact details (saved on the phone first if it can't be sent); do not include addresses or other personal information.
+- **Residents** choose an area, compare collectors, see who is collecting today, and call or message them on WhatsApp. No sign-up, address or GPS. They can report a problem anonymously, including when offline.
+- **Collectors** sign in with a code sent by SMS, submit a listing for review, see its status and the reason for any decision, say "I'm collecting today", and can edit or delete everything.
+- **Admins** review the queue, approve, reject, suspend and reinstate with a recorded reason, handle reports, manage the list of areas, and see anonymous usage counts.
+
+**Important:** demonstration listings are fictional and labelled as such; they are never mixed with real ones. No listing is called verified, licensed or official. Before the pilot can start, the owner has to switch on SMS sign-in, deploy the database changes and answer the questions in [QUESTIONS.md](QUESTIONS.md); the steps are in [docs/pilot/launch-checklist.md](docs/pilot/launch-checklist.md).
 
 ## Technology
 
@@ -62,22 +60,31 @@ setsetal/
 ├── src/
 │   ├── main.ts             # Start-up and event wiring
 │   ├── router.ts           # Hash routes, history and back
-│   ├── listings.ts         # Sample data, filters, cards and profile
-│   ├── forms.ts            # Registration, preview and feedback
+│   ├── api.ts              # Requests to Supabase with plain fetch
+│   ├── listings.ts         # Listings, filters, cards and profile
+│   ├── forms.ts, reports.ts# Feedback form and its offline outbox
+│   ├── auth.ts, captcha.ts # Sign-in by SMS code; optional Turnstile check
+│   ├── collector.ts, join.ts # A collector's own listing and the Join screen
+│   ├── admin.ts            # Admin screen
+│   ├── analytics.ts        # Anonymous usage counts
 │   ├── install.ts          # "Install app" button
 │   ├── ui.ts               # $, $$, escapeHTML, toast
-│   ├── data/lookups.ts     # Areas, vehicles, waste and report types
+│   ├── data/lookups.ts     # Areas, vehicles, waste and report types, from the database
 │   ├── i18n/               # en.json (source), wo.json, mnk.json, t() helper
 │   └── styles.css          # Design tokens and layout
-├── public/                 # icon.svg and PNG icons, copied as-is
+├── public/                 # Icons and .well-known/assetlinks.json
+├── supabase/               # Migrations and database tests
 ├── tests/e2e/              # Playwright specs
+├── tests/guide/            # Takes the guide's and the Play Store's screenshots
+├── android/                # Bubblewrap configuration for Google Play
+├── docs/                   # Plan, guide, pilot runbooks, legal drafts, specs, store listing
 ├── vite.config.ts          # Build, manifest and service worker settings
 └── netlify.toml            # Hosting and preview deploys
 ```
 
 ### Screen URLs
 
-Every screen has a shareable URL: `#/`, `#/find`, `#/collector/<id>`, `#/join`, `#/join/preview`, `#/help` and `#/admin`.
+Every screen has a shareable URL: `#/`, `#/find`, `#/collector/<id>`, `#/join`, `#/join/preview`, `#/help`, `#/privacy` and `#/admin`.
 
 ## Run Locally
 
@@ -109,7 +116,8 @@ The service worker is only active in the production build.
 ```bash
 npm run typecheck
 npx playwright install chromium   # once
-npm test
+npm test            # end-to-end tests
+npm run test:db     # database migrations and security rules
 ```
 
 To use an installed Chromium instead of downloading one, set `CHROMIUM_PATH`, for example `CHROMIUM_PATH=/usr/bin/chromium npm test`.
@@ -181,50 +189,28 @@ The prototype is not a substitute for these production safeguards.
 
 ## Current Limitations
 
-The prototype is not yet a live waste-collection marketplace.
+- **Not live yet.** Sign-in needs an SMS provider switched on in Supabase, and the hosted database needs the latest migrations. Until a real listing is approved, residents see demonstrations.
+- No "verified" badge: what that means is undecided, so listings are "approved" only.
+- No in-app booking, messaging, payments, ratings or location tracking. Residents and collectors arrange everything by phone.
+- "Collecting today" is the collector's own statement; SetSetal does not check it.
+- English only. Wolof and Mandinka files exist but are empty until native speakers translate and review them.
+- The privacy notice and retention policy are drafts awaiting a Gambian legal adviser.
+- Not yet tested on a real low-end Android phone.
 
-- No production database or backend API.
-- No real account creation, authentication, or password recovery.
-- No persistent collector registration or approval workflow.
-- No confirmed real-time availability, location tracking, routing, or booking.
-- No live messaging, payment processing, or service guarantees.
-- No production moderation queue or secure administrator dashboard.
-- Local demonstration state may be lost when the page is refreshed.
-- The service worker caches the app shell; it does not synchronise submissions or provide live services offline.
-
-Do not advertise or rely on these capabilities until they have been implemented and tested.
+Do not advertise capabilities that are not listed under Current Prototype.
 
 ## Roadmap
 
-### Milestone 1 — Clickable Prototype
+The plan of record is [docs/plan/README.md](docs/plan/README.md). In short:
 
-- [x] Establish the initial HTML, CSS, and JavaScript structure.
-- [x] Define the initial brand direction and user journeys.
-- [ ] Test navigation and forms on Android.
-- [ ] Validate the experience with residents and collectors.
-
-### Milestone 2 — Pilot Definition
-
-- [ ] Confirm priority neighbourhoods and service areas.
-- [ ] Agree on vehicle and waste categories.
-- [ ] Decide whether the pilot will use direct calls, service requests, or both.
-- [ ] Establish listing approval and complaint-handling procedures.
-- [ ] Confirm municipal involvement and local compliance requirements.
-
-### Milestone 3 — Backend and Trusted Listings
-
-- [ ] Select the backend, database, and hosting approach.
-- [ ] Implement authentication and role-based access.
-- [ ] Store and validate collector profiles and service areas.
-- [ ] Add administrator review, moderation, and audit history.
-- [ ] Implement consent-aware contact actions and secure report submission.
-
-### Milestone 4 — Controlled Pilot
-
-- [ ] Onboard a small, diverse group of real collectors.
-- [ ] Test listing accuracy and service-area matching.
-- [ ] Monitor failed contacts, complaints, and usability issues.
-- [ ] Improve the product before expanding to additional areas.
+| Phase | State |
+|---|---|
+| 0 Fix the prototype | Done, apart from a test on a real phone |
+| 1 Foundation | Done, apart from the owner merging to `main` |
+| 2 Backend and trusted listings | Built and tested; waits for SMS sign-in and a database deploy |
+| 3 Controlled pilot | Software, runbooks, poster and draft policies ready; the pilot itself has not started |
+| 4 Google Play | Configuration, listing text and graphics ready; needs a developer account |
+| 5 After the pilot | Three small items built; the rest specified in `docs/specs/` and waiting for pilot data |
 
 ## Contributing
 

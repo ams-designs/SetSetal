@@ -9,3 +9,5 @@ The project owner must answer these before Phase 2 (backend) and Phase 3 (pilot)
 | D3 | **Which areas and languages does the pilot cover?** | Sets the `areas` seed, the translations and who to recruit. Suggested: Kanifing and Brikama, with en, Wolof and Mandinka | **Brikama, in English** (26 Oct 2026). Wolof and Mandinka wait until after the pilot. The neighbourhoods within Brikama for the `areas` seed are still to be listed |
 | D4 | **Who legally owns the data?** A person, a business or a partner organisation | Needed for the privacy policy and the Play Store listing | _open_ |
 | D5 | **What is the budget?** | The pilot is almost free: Supabase free tier, free hosting and US$25 for Play. The main ongoing cost is SMS sign-in codes, charged per message | _open_ |
+
+More questions came up while finishing the phases (15 Nov 2026), with the default taken for each: see [../../QUESTIONS.md](../../QUESTIONS.md).

@@ -1,18 +1,19 @@
 # Data model (Supabase, Phase 2)
 
-The migrations in `supabase/migrations/` are the source of truth; this page explains them. Update both in the same change. The hosted project is `gplmfpglapxicfghlkid`; its migration history matches the file names.
+The migrations in `supabase/migrations/` are the source of truth; this page explains them. Update both in the same change. The hosted project is `gplmfpglapxicfghlkid`. **It is behind:** the five migrations dated 14 Nov 2026 (availability, decision guard, events, retention and erasure, app lookups) have not been applied to it yet.
 
 ## Tables
 
 | Table | Holds |
 |---|---|
-| `collectors` | `id`, `owner` (auth user), `name`, `vehicle_type`, `description`, `consent_at` (timestamp set by the server; null means no consent), `status` (`submitted`, `approved`, `rejected` or `suspended`), `created_at`, `updated_at` |
+| `collectors` | `id`, `owner` (auth user), `name`, `vehicle_type`, `description`, `consent_at` (timestamp set by the server; null means no consent), `status` (`submitted`, `approved`, `rejected` or `suspended`), `available_on` (the date the collector said "collecting today"; it expires by itself), `created_at`, `updated_at` (changes whenever anything an admin reviews changes, including contacts, areas and waste types) |
 | `collector_contacts` | `collector_id`, `phone`, `whatsapp` (E.164). Kept apart from `collectors` so RLS decides who can read them |
 | `areas` | The agreed list of neighbourhoods and districts (`id`, `name`, `district`, `active`, `sort_order`). The single source for the filter and the registration form. The pilot seeds `brikama` (D3) |
 | `collector_areas` | Many-to-many link (`collector_id`, `area_id`), because one cart may serve several neighbourhoods |
 | `waste_types`, `vehicle_types`, `report_types` | Ids only (`id`, `active`, `sort_order`); labels come from the translation files |
 | `collector_waste_types` | Many-to-many link (`collector_id`, `waste_type_id`) |
 | `reports` | `type`, `message`, an optional `collector_id`, `status` (`open`, `resolved`, `dismissed`), `resolution_note`, `resolved_by`, `resolved_at`, `created_at`. **Never stores a resident address or identity** |
+| `events` | Anonymous usage counts: `name` (`search_no_results`, `contact_tap`, `report_submitted`, `listing_marked_wrong`), `area`, `vehicle`, `waste`, `channel`, `report_type`, `collector_id`, `day`. **No user, device, IP address, time of day or free text** |
 | `audit_log` | `collector_id`, `actor`, `from_status`, `to_status`, `reason`, `created_at`. Every new listing and every status change writes one |
 | `admins` | The user IDs that hold the admin role. Added from the dashboard or SQL editor only. Policies check it through `private.is_admin()`, which isn't exposed through the API |
 
@@ -25,14 +26,18 @@ Each table revokes the default grants and grants back only what each role needs.
 - **Public (anon):** reads approved listings, through the `public_collectors` view (`security_invoker = on`). Can't read `owner`. Reads `collector_contacts` only when the listing is approved *and* `consent_at` is set. Reads active lookup rows. Can `insert` into `reports` (only `type`, `message`, `collector_id`, and only naming a listing it can see), with no reading back.
 - **Collector (authenticated):** reads approved listings plus their own. Creates, edits and deletes only their own listing, contacts, areas and waste types. Can't set `owner`, `status` or the timestamps (column privileges). Editing the name, vehicle, description or contact details of an approved or rejected listing, or adding an area or waste type, sends it back to `submitted`, with an audit row. Only active lookup values can be used. Reads their own listing's audit history, so they can see why it was rejected.
 - **Saving a listing:** collectors save through `save_my_listing(...)` (security invoker), which writes the listing, contacts, areas, waste types and consent in one transaction and returns the resulting status. It only touches the caller's own listing, even for admins, and saving without an id updates their existing listing rather than creating a second.
-- **Admin:** reads everything and resolves reports. Changes a status only through `set_collector_status(collector, status, reason)`, which requires a reason and writes the audit row. Nobody, not even an admin, sets `status` directly.
+- **Admin:** reads everything and resolves reports. Changes a status only through `set_collector_status(collector, status, reason, expected_status, expected_updated_at)`, which requires a reason, writes the audit row, and refuses with HTTP 409 (`PT409`) if the listing is no longer the version the admin saw. Nobody, not even an admin, sets `status` directly. Adds areas and switches them off; reads `events` and the summary from `admin_activity(days)`.
+- **Usage counts:** anyone can insert into `events`, never read. Each kind of event may carry only its own fields, may name only a listing the sender can see, and cannot choose its day.
+- **Availability:** `set_my_availability(boolean)` sets or clears `available_on` on the caller's own listing. It is not reviewed and leaves `status` and `updated_at` alone. `public_collectors.available_today` is true only on that day (UTC, which is Gambian time).
+- **Lookups in one request:** `app_lookups()` returns the active areas, vehicle, waste and report types in order.
+- **Erasure and retention:** `delete_my_account()` removes the caller's sign-in and, by cascade, their listing, contacts, areas, waste types and the counts that named the listing. `private.apply_retention()` runs nightly through `pg_cron` (see [../legal/data-retention.md](../legal/data-retention.md)).
 - `audit_log` is append-only. The API roles, including `service_role`, can only read it; only the audit trigger writes to it. The table owner (`postgres`, which the SQL editor uses) can still change anything, so don't edit it there.
 - Inserting a listing that is already approved (an import, for example) also needs a reason, so every approval is explained in the log.
 
 ## Notes for the front end
 
 - Report inserts must not ask for the row back (`Prefer: return=minimal`, the supabase-js default without `.select()`), because residents can't read reports. The form should say the report was sent, ask people not to include addresses or phone numbers, and explain what happens next.
-- `public_collectors` has no order. Sort by area match and suitability on the client, never by anything paid (rule 5).
+- `public_collectors` has no order. Sort by area match and suitability on the client, never by anything paid (rule 5). The app puts collectors who are collecting today first, then sorts by name.
 - Never seed sample listings into this database: they would look exactly like real ones (rule 1).
 
 ## Tests
@@ -41,4 +46,4 @@ Each table revokes the default grants and grants back only what each role needs.
 
 ## Indexes
 
-`collectors(status)`, `collectors(owner)`, `collector_areas(area_id)`, `collector_waste_types(waste_type_id)`, `audit_log(collector_id, created_at)` and `reports(status, created_at)`.
+`collectors(status)`, `collectors(owner)`, `collector_areas(area_id)`, `collector_waste_types(waste_type_id)`, `audit_log(collector_id, created_at)`, `reports(status, created_at)`, `events(day, name)` and `events(collector_id)`.
