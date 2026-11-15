@@ -58,11 +58,19 @@ end $$;
 revoke execute on function private.apply_retention() from public, anon, authenticated;
 
 -- Hosted Supabase has pg_cron; the test database doesn't, so it is skipped
--- there. 03:15 UTC is the middle of the night in The Gambia.
+-- there. 03:15 UTC is the middle of the night in The Gambia. If scheduling
+-- isn't possible the migration still succeeds and says so: schedule it by
+-- hand from the dashboard (Integrations, Cron) with the same command.
 do $$
 begin
   if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
-    create extension if not exists pg_cron;
-    perform cron.schedule('setsetal-retention', '15 3 * * *', 'select private.apply_retention()');
+    begin
+      create extension if not exists pg_cron;
+      perform cron.schedule('setsetal-retention', '15 3 * * *', 'select private.apply_retention()');
+    exception when others then
+      raise warning 'could not schedule the nightly clean-up (%): schedule "select private.apply_retention()" by hand', sqlerrm;
+    end;
+  else
+    raise notice 'pg_cron is not available: the nightly clean-up is not scheduled';
   end if;
 end $$;

@@ -5,3 +5,12 @@ test-results/
 playwright-report/
 .env.local
 .env.*.local
+
+# Android signing keys and builds never go in the repository.
+*.keystore
+*.jks
+*.apk
+*.aab
+android/*
+!android/twa-manifest.json
+!android/README.md
