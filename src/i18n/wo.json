@@ -364,5 +364,6 @@
   "admin.email.change": "",
   "admin.email.error.email": "",
   "admin.email.error.invalid": "",
-  "admin.phoneInstead": ""
+  "admin.phoneInstead": "",
+  "admin.email.code": ""
 }

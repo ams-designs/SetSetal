@@ -513,8 +513,8 @@ function showEmailSignIn(): void {
         <form id="admin-code-form"${sent ? "" : " hidden"}>
           <h2>${text("join.signin.codeTitle")}</h2>
           <p>${text("admin.email.codeSent", { email: codeEmail })}</p>
-          <label for="admin-code">${text("join.signin.code")}</label>
-          <input id="admin-code" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6">
+          <label for="admin-code">${text("admin.email.code")}</label>
+          <input id="admin-code" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6,10}" maxlength="10">
           <button id="admin-code-verify" class="button primary" type="submit">${text("join.signin.verify")}</button>
           <button id="admin-email-change" class="text-button" type="button">${text("admin.email.change")}</button>
         </form>

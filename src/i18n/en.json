@@ -358,11 +358,12 @@
   "demo.demo-horse.name": "Horse-cart collection",
   "demo.demo-horse.description": "Example listing representing horse-cart collection.",
   "admin.email.title": "Sign in with email",
-  "admin.email.body": "We'll email you a 6-digit code. This works only for an admin address the project owner has set up.",
+  "admin.email.body": "We'll email you a code. This works only for an admin address the project owner has set up.",
   "admin.email.label": "Your email address",
   "admin.email.codeSent": "We sent a code to {email}. It can take a minute to arrive.",
   "admin.email.change": "Use a different email address",
   "admin.email.error.email": "Enter an email address, for example name@example.com.",
   "admin.email.error.invalid": "We couldn't send a code to that address. Check it, or ask the project owner whether it is set up as an admin.",
-  "admin.phoneInstead": "Sign in with your phone instead"
+  "admin.phoneInstead": "Sign in with your phone instead",
+  "admin.email.code": "Code from the email"
 }

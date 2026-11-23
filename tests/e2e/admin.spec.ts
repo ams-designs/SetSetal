@@ -126,11 +126,12 @@ test.describe("signing in by email", () => {
     await page.getByRole("button", { name: "Send code" }).click();
     await expect(page.getByText("We sent a code to admin@example.com.")).toBeVisible();
     expect(sent).toEqual([{ email: "admin@example.com", create_user: false, gotrue_meta_security: { captcha_token: "test-captcha-token-1" } }]);
-    await expect(page.locator("#admin-content").getByLabel("6-digit code")).toBeFocused();
-    await page.locator("#admin-content").getByLabel("6-digit code").fill("123456");
+    await expect(page.locator("#admin-content").getByLabel("Code from the email")).toBeFocused();
+    // The hosted project sends 8-digit email codes; the form takes 6 to 10.
+    await page.locator("#admin-content").getByLabel("Code from the email").fill("12345678");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.locator(".admin-card").first()).toContainText("Fatou's carts");
-    expect(verified).toEqual([{ type: "email", email: "admin@example.com", token: "123456" }]);
+    expect(verified).toEqual([{ type: "email", email: "admin@example.com", token: "12345678" }]);
   });
 
   test("a mistyped address is caught before sending", async ({ page, context }) => {
@@ -150,7 +151,7 @@ test.describe("signing in by email", () => {
     await page.getByLabel("Your email address").fill("someone@example.com");
     await page.getByRole("button", { name: "Send code" }).click();
     await expect(page.getByText("ask the project owner whether it is set up as an admin", { exact: false })).toBeVisible();
-    await expect(page.locator("#admin-content").getByLabel("6-digit code")).toBeHidden();
+    await expect(page.locator("#admin-content").getByLabel("Code from the email")).toBeHidden();
     ignoreFailedRequests(consoleErrors);
   });
 
@@ -161,7 +162,7 @@ test.describe("signing in by email", () => {
     await page.goto("./#/admin");
     await page.getByLabel("Your email address").fill("admin@example.com");
     await page.getByRole("button", { name: "Send code" }).click();
-    await page.locator("#admin-content").getByLabel("6-digit code").fill("000000");
+    await page.locator("#admin-content").getByLabel("Code from the email").fill("000000");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.getByText("That code didn't work.", { exact: false })).toBeVisible();
     ignoreFailedRequests(consoleErrors);
