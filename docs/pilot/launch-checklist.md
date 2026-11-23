@@ -21,6 +21,18 @@ Do these once, in order. Steps marked **owner** need a decision or an account th
 
 ## 3. First admin
 
+This works before SMS sign-in is switched on: an admin can sign in with a code sent by email. Only an address you add in the dashboard can sign in this way; the app never creates an account from the email form.
+
+**By email (no SMS needed):**
+
+- [ ] Supabase dashboard → Authentication → Users → Add user → Create new user: the admin's email address, any strong password (it is never used), and tick "Auto Confirm User".
+- [ ] Authentication → Emails → Magic Link: add the line `Your SetSetal code is {{ .Token }}` to the message, so the email contains the 6-digit code the app asks for. Without it, the email holds only a link, which the app doesn't use.
+- [ ] Supabase's built-in email service sends only to addresses in the project's team and only a few an hour. That is enough for one admin. For more, set up your own SMTP under Authentication → Emails → SMTP Settings.
+- [ ] In the SQL editor: `insert into public.admins (user_id) select id from auth.users where email = 'admin@example.com';`
+- [ ] Open `/#/admin`, enter the address, then the code from the email: the review queue appears.
+
+**By phone (once step 2 is done):**
+
 - [ ] The admin signs in once on the Join screen with their own phone.
 - [ ] In the SQL editor: `insert into public.admins (user_id) select id from auth.users where phone = '2207XXXXXX';` (the number without `+`).
 - [ ] Open `/#/admin` on that phone: the review queue appears.

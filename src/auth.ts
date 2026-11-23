@@ -1,5 +1,5 @@
-// Collector sign-in with a code sent by SMS (Supabase Auth). Residents never
-// sign in. The session lives in localStorage, as supabase-js would keep it.
+// Collector sign-in with a code sent by SMS (Supabase Auth), and admin sign-in
+// with a code sent by email until SMS is switched on. Residents never sign in. The session lives in localStorage, as supabase-js would keep it.
 import { backendConfigured, call } from "./api";
 
 const SESSION_KEY = "setsetal.session.v1";
@@ -13,6 +13,8 @@ export interface Session {
   expiresAt: number;
   userId: string;
   phone: string;
+  // Set for an admin who signed in by email; phone is then empty.
+  email?: string;
   lastUsed?: number;
 }
 
@@ -51,7 +53,7 @@ interface TokenResponse {
   access_token: string;
   refresh_token: string;
   expires_in: number;
-  user: { id: string; phone?: string };
+  user: { id: string; phone?: string; email?: string };
 }
 
 function toSession(body: TokenResponse): Session {
@@ -61,7 +63,8 @@ function toSession(body: TokenResponse): Session {
     refreshToken: body.refresh_token,
     expiresAt: Date.now() + body.expires_in * 1000,
     userId: body.user.id,
-    phone: phone && !phone.startsWith("+") ? `+${phone}` : phone
+    phone: phone && !phone.startsWith("+") ? `+${phone}` : phone,
+    ...(body.user.email ? { email: body.user.email } : {})
   };
 }
 
@@ -81,14 +84,19 @@ async function failure(response: Response): Promise<AuthResult> {
   return response.status >= 500 ? "failed" : "invalid";
 }
 
-// captchaToken is the proof from the sign-in check, when the build has one.
-export async function requestCode(phone: string, captchaToken: string | null = null): Promise<AuthResult> {
+// A plain check, enough to catch typing mistakes; Supabase has the last word.
+export function normaliseEmail(input: string): string | null {
+  const email = input.trim().toLowerCase();
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
+async function sendCode(body: Record<string, unknown>, captchaToken: string | null): Promise<AuthResult> {
   if (!backendConfigured) return "unavailable";
   if (!navigator.onLine) return "offline";
   try {
     const response = await call("auth/v1/otp", {
       method: "POST",
-      body: JSON.stringify(captchaToken ? { phone, gotrue_meta_security: { captcha_token: captchaToken } } : { phone })
+      body: JSON.stringify(captchaToken ? { ...body, gotrue_meta_security: { captcha_token: captchaToken } } : body)
     });
     return response.ok ? "ok" : failure(response);
   } catch {
@@ -96,13 +104,32 @@ export async function requestCode(phone: string, captchaToken: string | null = n
   }
 }
 
-export async function verifyCode(phone: string, code: string): Promise<AuthResult> {
+// captchaToken is the proof from the sign-in check, when the build has one.
+export function requestCode(phone: string, captchaToken: string | null = null): Promise<AuthResult> {
+  return sendCode({ phone }, captchaToken);
+}
+
+// Admins only: create_user is false, so an address without an account (one
+// the project owner hasn't set up) gets no code and no new account.
+export function requestEmailCode(email: string, captchaToken: string | null = null): Promise<AuthResult> {
+  return sendCode({ email, create_user: false }, captchaToken);
+}
+
+export function verifyCode(phone: string, code: string): Promise<AuthResult> {
+  return verify({ type: "sms", phone, token: code });
+}
+
+export function verifyEmailCode(email: string, code: string): Promise<AuthResult> {
+  return verify({ type: "email", email, token: code });
+}
+
+async function verify(body: Record<string, string>): Promise<AuthResult> {
   if (!backendConfigured) return "unavailable";
   if (!navigator.onLine) return "offline";
   try {
     const response = await call("auth/v1/verify", {
       method: "POST",
-      body: JSON.stringify({ type: "sms", phone, token: code })
+      body: JSON.stringify(body)
     });
     if (!response.ok) return failure(response);
     memorySession = toSession((await response.json()) as TokenResponse);

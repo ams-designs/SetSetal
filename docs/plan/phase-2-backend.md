@@ -28,7 +28,8 @@
   - [x] approve, reject or suspend, with a required reason (shown to the collector)
   - [x] reports list (resolve or dismiss with a note)
   - [x] audit history
-  - [ ] Add the first admin: once someone has signed in, insert their user id into `admins` from the SQL editor (`docs/pilot/launch-checklist.md`, step 3).
+  - [x] Admin sign-in by email code (added 23 Nov 2026), so the first admin needs no SMS. Only addresses added in the dashboard can sign in (`create_user: false`).
+  - [ ] Add the first admin: create their account and insert their user id into `admins` from the SQL editor (`docs/pilot/launch-checklist.md`, step 3).
   - [x] Give `set_collector_status` an expected status and `updated_at`, and have contact, area and waste edits touch `collectors.updated_at`, so the server (not only the screen) refuses decisions on a version the admin didn't see. It answers 409, and the screen says the listing changed.
   - [x] Show rejected and suspended listings so a decision can be reversed, and record report decisions in the history. Closed reports can be reopened.
   - [x] Manage areas (add, switch off and on).

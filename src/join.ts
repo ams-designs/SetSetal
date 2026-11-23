@@ -107,7 +107,7 @@ const SIGNIN_ERRORS: Record<Exclude<AuthResult, "ok">, MessageKey> = {
   failed: "join.signin.error.failed"
 };
 
-async function busy<T>(button: HTMLButtonElement, label: MessageKey, task: () => Promise<T>): Promise<T> {
+export async function busy<T>(button: HTMLButtonElement, label: MessageKey, task: () => Promise<T>): Promise<T> {
   const idle = button.textContent;
   button.disabled = true;
   button.textContent = t(label);
@@ -404,7 +404,7 @@ export async function renderJoin(): Promise<void> {
     resetCollectorState();
     loadedFor = session.userId;
   }
-  $("#signed-in-as").textContent = t("join.signedInAs", { phone: session.phone });
+  $("#signed-in-as").textContent = t("join.signedInAs", { phone: session.phone || session.email || "" });
   if (editing) {
     await showForm(session.phone);
     return;

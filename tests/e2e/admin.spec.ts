@@ -98,10 +98,76 @@ const ignoreFailedRequests = (consoleErrors: string[]) => {
 
 test("signed out, the admin screen asks to sign in first", async ({ page }) => {
   await page.goto("./#/admin");
-  await expect(page.getByText("Sign in with your phone to use the admin tools.")).toBeVisible();
-  await page.locator("#admin-content").getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByText("Sign in to use the admin tools.")).toBeVisible();
+  await expect(page.getByLabel("Your email address")).toBeVisible();
+  await page.getByRole("button", { name: "Sign in with your phone instead" }).click();
   await expectScreen(page, "Register your service", "#/join");
   await expect(page.getByLabel("Your phone number")).toBeVisible();
+});
+
+test.describe("signing in by email", () => {
+  test("an admin signs in with a code sent by email, and no account is created", async ({ page, context }) => {
+    await mockAdmin(context);
+    const sent: unknown[] = [];
+    const verified: unknown[] = [];
+    await context.route(/\/auth\/v1\/otp/, (route) => {
+      sent.push(route.request().postDataJSON());
+      return route.fulfill({ json: {} });
+    });
+    await context.route(/\/auth\/v1\/verify/, (route) => {
+      verified.push(route.request().postDataJSON());
+      return route.fulfill({ json: {
+        access_token: "test-token", refresh_token: "test-refresh", expires_in: 3600,
+        user: { id: COLLECTOR_ID, email: "admin@example.com", phone: "" }
+      } });
+    });
+    await page.goto("./#/admin");
+    await page.getByLabel("Your email address").fill(" Admin@Example.com ");
+    await page.getByRole("button", { name: "Send code" }).click();
+    await expect(page.getByText("We sent a code to admin@example.com.")).toBeVisible();
+    expect(sent).toEqual([{ email: "admin@example.com", create_user: false, gotrue_meta_security: { captcha_token: "test-captcha-token-1" } }]);
+    await expect(page.locator("#admin-content").getByLabel("6-digit code")).toBeFocused();
+    await page.locator("#admin-content").getByLabel("6-digit code").fill("123456");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.locator(".admin-card").first()).toContainText("Fatou's carts");
+    expect(verified).toEqual([{ type: "email", email: "admin@example.com", token: "123456" }]);
+  });
+
+  test("a mistyped address is caught before sending", async ({ page, context }) => {
+    let requests = 0;
+    await context.route(/\/auth\/v1\/otp/, (route) => { requests++; return route.fulfill({ json: {} }); });
+    await page.goto("./#/admin");
+    await page.getByLabel("Your email address").fill("admin@example");
+    await page.getByRole("button", { name: "Send code" }).click();
+    await expect(page.getByText("Enter an email address, for example name@example.com.")).toBeVisible();
+    expect(requests).toBe(0);
+  });
+
+  test("an address that isn't set up gets no code, and is told so", async ({ page, context, consoleErrors }) => {
+    await context.route(/\/auth\/v1\/otp/, (route) =>
+      route.fulfill({ status: 422, json: { code: "otp_disabled", msg: "Signups not allowed for otp" } }));
+    await page.goto("./#/admin");
+    await page.getByLabel("Your email address").fill("someone@example.com");
+    await page.getByRole("button", { name: "Send code" }).click();
+    await expect(page.getByText("ask the project owner whether it is set up as an admin", { exact: false })).toBeVisible();
+    await expect(page.locator("#admin-content").getByLabel("6-digit code")).toBeHidden();
+    ignoreFailedRequests(consoleErrors);
+  });
+
+  test("a wrong code says so, and a different address can be used", async ({ page, context, consoleErrors }) => {
+    await context.route(/\/auth\/v1\/otp/, (route) => route.fulfill({ json: {} }));
+    await context.route(/\/auth\/v1\/verify/, (route) =>
+      route.fulfill({ status: 403, json: { code: "otp_expired", msg: "Token has expired or is invalid" } }));
+    await page.goto("./#/admin");
+    await page.getByLabel("Your email address").fill("admin@example.com");
+    await page.getByRole("button", { name: "Send code" }).click();
+    await page.locator("#admin-content").getByLabel("6-digit code").fill("000000");
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByText("That code didn't work.", { exact: false })).toBeVisible();
+    ignoreFailedRequests(consoleErrors);
+    await page.getByRole("button", { name: "Use a different email address" }).click();
+    await expect(page.getByLabel("Your email address")).toBeFocused();
+  });
 });
 
 test("an account that isn't an admin is told so", async ({ page, context }) => {
@@ -221,7 +287,7 @@ test("signing out clears the admin screen for the next person", async ({ page, c
   await page.goto("./#/join");
   await page.getByRole("button", { name: "Sign out" }).click();
   await page.goto("./#/admin");
-  await expect(page.getByText("Sign in with your phone to use the admin tools.")).toBeVisible();
+  await expect(page.getByText("Sign in to use the admin tools.")).toBeVisible();
   await expect(page.getByText("+2207123456")).toHaveCount(0);
 });
 

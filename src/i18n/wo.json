@@ -356,5 +356,13 @@
   "demo.demo-donkey.name": "",
   "demo.demo-donkey.description": "",
   "demo.demo-horse.name": "",
-  "demo.demo-horse.description": ""
+  "demo.demo-horse.description": "",
+  "admin.email.title": "",
+  "admin.email.body": "",
+  "admin.email.label": "",
+  "admin.email.codeSent": "",
+  "admin.email.change": "",
+  "admin.email.error.email": "",
+  "admin.email.error.invalid": "",
+  "admin.phoneInstead": ""
 }

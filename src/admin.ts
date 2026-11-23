@@ -1,15 +1,19 @@
 // The admin screen: review queue, reports, live and hidden listings, history,
 // areas and usage counts. Admins sign in with the same phone code as
-// collectors. The database decides what an admin may do (RLS and
+// collectors, or with a code sent by email until SMS is switched on. The
+// database decides what an admin may do (RLS and
 // set_collector_status); this screen only shows it.
 import { t, type MessageKey } from "./i18n";
 import {
   OTHER_AREA, isVehicle, isReportType, isWaste, refreshLookups, reportTypeLabel, vehicleLabel, wasteLabel
 } from "./data/lookups";
 import { call } from "./api";
-import { currentSession, type Session } from "./auth";
+import {
+  currentSession, normaliseEmail, requestEmailCode, verifyEmailCode, type AuthResult, type Session
+} from "./auth";
+import { captchaEnabled, showCaptcha, takeCaptchaToken } from "./captcha";
 import type { ListingStatus } from "./collector";
-import { signInThen } from "./join";
+import { busy, signInThen } from "./join";
 import { reloadListings } from "./listings";
 import { $, escapeHTML, toast } from "./ui";
 
@@ -448,6 +452,7 @@ let renderToken = 0;
 export function clearAdmin(): void {
   renderToken++;
   shown.clear();
+  codeEmail = "";
   $("#admin-content").innerHTML = "";
 }
 
@@ -457,7 +462,7 @@ export async function renderAdmin(): Promise<void> {
   const session = await currentSession();
   if (token !== renderToken) return;
   if (!session) {
-    message("admin.signInFirst", { id: "admin-sign-in", label: "join.signin.verify" });
+    showEmailSignIn();
     return;
   }
   try {
@@ -472,6 +477,97 @@ export async function renderAdmin(): Promise<void> {
     const key = FAILURES[(failure as Failure)] ?? "admin.error.failed";
     message(key, failure === "signed-out" ? { id: "admin-sign-in", label: "join.signin.verify" } : { id: "admin-refresh", label: "join.retry" });
   }
+}
+
+// Email sign-in ----------------------------------------------------------------------
+// Until SMS codes are switched on, an admin signs in with a code sent to an
+// email address the project owner has set up in Supabase. Collectors still
+// sign in with their phone.
+
+// The address a code was sent to; empty while the address is being asked for.
+let codeEmail = "";
+
+const EMAIL_ERRORS: Record<Exclude<AuthResult, "ok">, MessageKey> = {
+  unavailable: "join.signin.error.unavailable",
+  offline: "join.signin.error.offline",
+  invalid: "admin.email.error.invalid",
+  "rate-limited": "join.signin.error.rateLimited",
+  captcha: "join.signin.error.captcha",
+  failed: "join.signin.error.failed"
+};
+
+function showEmailSignIn(): void {
+  const sent = Boolean(codeEmail);
+  const text = (key: MessageKey, vars?: Record<string, string>) => escapeHTML(t(key, vars));
+  $("#admin-content").innerHTML = `
+      <div class="notice"><p>${text("admin.signInFirst")}</p></div>
+      <div class="panel form-panel">
+        <form id="admin-email-form"${sent ? " hidden" : ""}>
+          <h2>${text("admin.email.title")}</h2>
+          <p>${text("admin.email.body")}</p>
+          <label for="admin-email">${text("admin.email.label")}</label>
+          <input id="admin-email" name="email" type="email" autocomplete="email" required maxlength="254">
+          <div id="admin-captcha"></div>
+          <button id="admin-email-send" class="button primary" type="submit">${text("join.signin.send")}</button>
+        </form>
+        <form id="admin-code-form"${sent ? "" : " hidden"}>
+          <h2>${text("join.signin.codeTitle")}</h2>
+          <p>${text("admin.email.codeSent", { email: codeEmail })}</p>
+          <label for="admin-code">${text("join.signin.code")}</label>
+          <input id="admin-code" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6">
+          <button id="admin-code-verify" class="button primary" type="submit">${text("join.signin.verify")}</button>
+          <button id="admin-email-change" class="text-button" type="button">${text("admin.email.change")}</button>
+        </form>
+        <div id="admin-signin-feedback" class="feedback" role="status" hidden></div>
+      </div>
+      <button class="button secondary full-width" type="button" id="admin-sign-in">${text("admin.phoneInstead")}</button>`;
+  if (!sent && captchaEnabled) void showCaptcha($("#admin-captcha"));
+}
+
+function signInFeedback(key: MessageKey | null): void {
+  const box = document.querySelector<HTMLElement>("#admin-signin-feedback");
+  if (!box) return;
+  box.hidden = !key;
+  box.textContent = key ? t(key) : "";
+}
+
+async function handleEmail(): Promise<void> {
+  const input = $<HTMLInputElement>("#admin-email");
+  const email = normaliseEmail(input.value);
+  if (!email) {
+    signInFeedback("admin.email.error.email");
+    input.focus();
+    return;
+  }
+  const result = await busy($<HTMLButtonElement>("#admin-email-send"), "join.signin.sending", async () => {
+    if (!captchaEnabled) return requestEmailCode(email);
+    const captchaToken = await takeCaptchaToken();
+    return captchaToken ? requestEmailCode(email, captchaToken) : "captcha-wait";
+  });
+  // The person may have left the screen while the code was being sent.
+  if (!document.querySelector("#admin-email-form")) return;
+  if (result === "captcha-wait") return signInFeedback("join.signin.error.captchaWait");
+  if (result !== "ok") return signInFeedback(EMAIL_ERRORS[result]);
+  codeEmail = email;
+  showEmailSignIn();
+  $("#admin-code").focus();
+}
+
+async function handleEmailCode(form: HTMLFormElement): Promise<void> {
+  if (!form.reportValidity()) return;
+  const code = $<HTMLInputElement>("#admin-code").value.trim();
+  const result = await busy($<HTMLButtonElement>("#admin-code-verify"), "join.signin.checking",
+    () => verifyEmailCode(codeEmail, code));
+  if (!document.querySelector("#admin-code-form")) return;
+  if (result !== "ok") return signInFeedback(result === "invalid" ? "join.signin.error.invalidCode" : EMAIL_ERRORS[result]);
+  codeEmail = "";
+  await renderAdmin();
+}
+
+function changeEmail(): void {
+  codeEmail = "";
+  showEmailSignIn();
+  $("#admin-email").focus();
 }
 
 // Decisions ------------------------------------------------------------------------
@@ -571,9 +667,16 @@ export function bindAdmin(): void {
       return;
     }
     if (target.closest("#admin-refresh")) void renderAdmin();
+    if (target.closest("#admin-email-change")) changeEmail();
     if (target.closest("#admin-sign-in")) signInThen("admin");
   });
   content.addEventListener("submit", (event) => {
+    const signInForm = (event.target as Element).closest<HTMLFormElement>("#admin-email-form, #admin-code-form");
+    if (signInForm) {
+      event.preventDefault();
+      void (signInForm.id === "admin-email-form" ? handleEmail() : handleEmailCode(signInForm));
+      return;
+    }
     const areaForm = (event.target as Element).closest<HTMLFormElement>("#area-form");
     if (areaForm) {
       event.preventDefault();

@@ -44,7 +44,8 @@ const TURNSTILE_STUB = `
       if (!window.turnstileHold) window.turnstilePass();
       return "widget-1";
     },
-    reset() { if (!window.turnstileHold) window.turnstilePass(); }
+    reset() { if (!window.turnstileHold) window.turnstilePass(); },
+    remove() {}
   };`;
 
 // Every test fails on a console error or an uncaught exception, and never

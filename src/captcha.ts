@@ -14,6 +14,7 @@ interface Turnstile {
     "error-callback": () => void;
   }): string;
   reset(widget: string): void;
+  remove(widget: string): void;
 }
 
 const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
@@ -23,6 +24,8 @@ export const captchaEnabled = Boolean(siteKey);
 
 let script: Promise<Turnstile | null> | null = null;
 let widget: string | null = null;
+// Where the check is shown: the Join screen's form or the admin screen's.
+let shownIn: HTMLElement | null = null;
 let token: string | null = null;
 // Someone waiting for the check to pass.
 let waiting: (() => void) | null = null;
@@ -46,12 +49,18 @@ function loadScript(): Promise<Turnstile | null> {
   return script;
 }
 
-// Shows the check inside the container. Safe to call every time the sign-in
-// form is shown.
+// Shows the check inside the container, moving it there from another form.
+// Safe to call every time a sign-in form is shown.
 export async function showCaptcha(container: HTMLElement): Promise<void> {
-  if (!siteKey || widget !== null) return;
+  if (!siteKey || (widget !== null && shownIn === container)) return;
   const api = await loadScript();
-  if (!api || widget !== null) return;
+  if (!api || (widget !== null && shownIn === container)) return;
+  if (widget !== null) {
+    api.remove(widget);
+    widget = null;
+    token = null;
+  }
+  shownIn = container;
   widget = api.render(container, {
     sitekey: siteKey,
     callback: (value) => {
