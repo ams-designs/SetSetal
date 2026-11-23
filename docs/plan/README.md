@@ -12,7 +12,7 @@ The phases run in order. Each one ends with something real people can use. The d
 |---|---|---|---|---|
 | 0 | Fix the prototype | ~1 week | Tasks done; real-phone test pending (owner) | [phase-0-fix-prototype.md](phase-0-fix-prototype.md) |
 | 1 | Foundation | ~2 weeks | Tasks done; owner to merge `adlai_changes` to `main` | [phase-1-foundation.md](phase-1-foundation.md) |
-| 2 | Backend and trusted listings | ~3–4 weeks | **Active.** Code and tests done (15 Nov 2026); waits for the database deploy, SMS sign-in and the first admin | [phase-2-backend.md](phase-2-backend.md) |
+| 2 | Backend and trusted listings | ~3–4 weeks | **Active.** Code and tests done (15 Nov 2026); database deployed (23 Nov 2026); waits for SMS sign-in and the first admin | [phase-2-backend.md](phase-2-backend.md) |
 | 3 | Controlled pilot | ~4–6 weeks | Software, runbooks, poster and draft policies done; the pilot itself has not started | [phase-3-pilot.md](phase-3-pilot.md) |
 | 4 | Google Play release | ~1–2 weeks | Configuration, listing and graphics prepared; blocked on a developer account (D4) | [phase-4-play-store.md](phase-4-play-store.md) |
 | 5 | After the pilot | Data-driven | Three low-risk items built; the rest specified, waiting for pilot data | [phase-5-post-pilot.md](phase-5-post-pilot.md) |

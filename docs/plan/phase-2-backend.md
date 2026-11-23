@@ -38,7 +38,7 @@
 - [x] Keep the "Demonstration listing" labels for any remaining sample data, and never mix samples with real listings. Real listings replace all samples as soon as one is approved.
 
 - [x] A collector can delete their listing and account (`delete_my_account()`), which the privacy notice promises.
-- [ ] Deploy the 14 Nov 2026 migrations to the hosted project and regenerate `src/types/db.ts` (owner, or with the owner's go-ahead: the project was paused and not touched). `docs/pilot/launch-checklist.md`, step 1.
+- [x] Deploy the 14 Nov 2026 migrations to the hosted project and regenerate `src/types/db.ts`. Done 23 Nov 2026 with the owner's go-ahead; the generated types matched the hand-written ones. `docs/pilot/launch-checklist.md`, step 1.
 
 ## Exit criterion
 

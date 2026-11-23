@@ -1,10 +1,7 @@
 // Generated from the SetSetal Supabase project. Do not edit by hand; regenerate
 // after each migration (Supabase MCP generate_typescript_types, or
 // `supabase gen types typescript --project-id gplmfpglapxicfghlkid`).
-//
-// The 14 Nov 2026 migrations (availability, decision guard, events, retention,
-// app_lookups) were added here by hand in the generator's format, because the
-// hosted project was paused. Regenerate once they are deployed.
+
 export type Json =
   | string
   | number
@@ -18,6 +15,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.18"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -610,6 +632,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       collector_status: ["submitted", "approved", "rejected", "suspended"],

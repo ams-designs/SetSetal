@@ -4,11 +4,12 @@ Do these once, in order. Steps marked **owner** need a decision or an account th
 
 ## 1. Deploy the code and the database
 
-- [ ] Restore the Supabase project if it is paused (dashboard → project → Restore). It pauses after a week without use on the free tier.
-- [ ] Apply the migrations: `supabase link --project-ref gplmfpglapxicfghlkid`, then `supabase db push`. Five new migrations dated 14 Nov 2026 should be applied.
-- [ ] Regenerate the types and check nothing changed unexpectedly: `supabase gen types typescript --project-id gplmfpglapxicfghlkid > src/types/db.ts`, then `npm run build`.
-- [ ] In the SQL editor, check the nightly clean-up is scheduled (see `docs/legal/data-retention.md`), and that deleting an account works: `select has_table_privilege('postgres', 'auth.users', 'DELETE');` must be true.
+- [x] Restore the Supabase project if it is paused (dashboard → project → Restore). It pauses after a week without use on the free tier.
+- [x] Apply the migrations: `supabase link --project-ref gplmfpglapxicfghlkid`, then `supabase db push`. Five new migrations dated 14 Nov 2026 should be applied. Done 23 Nov 2026.
+- [x] Regenerate the types and check nothing changed unexpectedly: `supabase gen types typescript --project-id gplmfpglapxicfghlkid > src/types/db.ts`, then `npm run build`.
+- [x] In the SQL editor, check the nightly clean-up is scheduled (see `docs/legal/data-retention.md`), and that deleting an account works: `select has_table_privilege('postgres', 'auth.users', 'DELETE');` must be true. Both confirmed 23 Nov 2026 (`setsetal-retention`, 03:15 daily).
 - [ ] Push `adlai_changes`; check the preview (`BASE_URL=https://adlai-changes--setsetal.netlify.app npm test`); **owner** merges to `main`.
+  - [x] Pushed and checked 23 Nov 2026: 124 passed, 4 skipped. The one failure is the captcha sign-in test, which needs `VITE_TURNSTILE_SITE_KEY` set in Netlify (step 2).
 
 ## 2. Sign-in by SMS (**owner**, decisions D5 and Q4)
 

@@ -2,7 +2,7 @@
 
 Mobile-first PWA that helps residents in The Gambia find local waste collectors (municipal and private trucks, vans, tricycles, donkey carts, horse carts). Repo: `ams-designs/SetSetal`.
 
-**Status:** built for the Brikama pilot, not yet live. Listings are demonstration data until a real one is approved. The hosted database is behind the migrations (see `docs/pilot/launch-checklist.md`), and `QUESTIONS.md` lists what the owner still has to decide.
+**Status:** built for the Brikama pilot, not yet live. Listings are demonstration data until a real one is approved. The hosted database has every migration (deployed 23 Nov 2026; next steps in `docs/pilot/launch-checklist.md`), and `QUESTIONS.md` lists what the owner still has to decide.
 **Plan of record:** [docs/plan/README.md](docs/plan/README.md). Check which phase is active there before starting work.
 
 ## Current layout
@@ -50,7 +50,7 @@ These rules make the product trustworthy, so treat them as constraints, not pref
 - **Accessibility:** touch targets of 48×48 px or larger, visible focus, labelled controls, `aria-live` for results and toasts, `aria-current` on the nav, and respect for `prefers-reduced-motion`.
 - **Icons:** use SVG, never emoji. The back chevron path is `m15 18-6-6 6-6`.
 - **Lists:** areas, vehicle types and waste types have a single source, the database. Don't add a hard-coded copy. A new vehicle or waste type needs a row in its table, a `lookup.*` label in `en.json` and, for vehicles, an icon in `src/listings.ts`.
-- **Database:** `src/types/db.ts` was last updated by hand (the hosted project was paused); regenerate it after the next deploy. Retention periods live in `private.apply_retention()` and `docs/legal/data-retention.md`: change both together.
+- **Database:** `src/types/db.ts` is generated from the hosted project; regenerate it after every migration you deploy. The free-tier project pauses after a week unused: restore it from the dashboard before deploying. Retention periods live in `private.apply_retention()` and `docs/legal/data-retention.md`: change both together.
 - **Copy:** use British English, plain and short. From Phase 1 all user-facing text lives in translation files (en first, then Wolof and Mandinka, checked by native speakers). The pilot runs in English only (D3).
 - **Commits:** keep them small and focused, and tie each one to a task in the active phase file.
 

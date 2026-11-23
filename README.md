@@ -42,7 +42,7 @@ The app is built for a pilot in Brikama. Until the first real collector is appro
 - **Collectors** sign in with a code sent by SMS, submit a listing for review, see its status and the reason for any decision, say "I'm collecting today", and can edit or delete everything.
 - **Admins** review the queue, approve, reject, suspend and reinstate with a recorded reason, handle reports, manage the list of areas, and see anonymous usage counts.
 
-**Important:** demonstration listings are fictional and labelled as such; they are never mixed with real ones. No listing is called verified, licensed or official. Before the pilot can start, the owner has to switch on SMS sign-in, deploy the database changes and answer the questions in [QUESTIONS.md](QUESTIONS.md); the steps are in [docs/pilot/launch-checklist.md](docs/pilot/launch-checklist.md).
+**Important:** demonstration listings are fictional and labelled as such; they are never mixed with real ones. No listing is called verified, licensed or official. Before the pilot can start, the owner has to switch on SMS sign-in and answer the questions in [QUESTIONS.md](QUESTIONS.md); the steps are in [docs/pilot/launch-checklist.md](docs/pilot/launch-checklist.md).
 
 ## Technology
 
@@ -189,7 +189,7 @@ The prototype is not a substitute for these production safeguards.
 
 ## Current Limitations
 
-- **Not live yet.** Sign-in needs an SMS provider switched on in Supabase, and the hosted database needs the latest migrations. Until a real listing is approved, residents see demonstrations.
+- **Not live yet.** Sign-in needs an SMS provider switched on in Supabase. Until a real listing is approved, residents see demonstrations.
 - No "verified" badge: what that means is undecided, so listings are "approved" only.
 - No in-app booking, messaging, payments, ratings or location tracking. Residents and collectors arrange everything by phone.
 - "Collecting today" is the collector's own statement; SetSetal does not check it.
@@ -207,7 +207,7 @@ The plan of record is [docs/plan/README.md](docs/plan/README.md). In short:
 |---|---|
 | 0 Fix the prototype | Done, apart from a test on a real phone |
 | 1 Foundation | Done, apart from the owner merging to `main` |
-| 2 Backend and trusted listings | Built and tested; waits for SMS sign-in and a database deploy |
+| 2 Backend and trusted listings | Built, tested and deployed to the database; waits for SMS sign-in |
 | 3 Controlled pilot | Software, runbooks, poster and draft policies ready; the pilot itself has not started |
 | 4 Google Play | Configuration, listing text and graphics ready; needs a developer account |
 | 5 After the pilot | Three small items built; the rest specified in `docs/specs/` and waiting for pilot data |

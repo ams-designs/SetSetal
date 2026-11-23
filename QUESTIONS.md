@@ -11,7 +11,7 @@ Set aside on 14–15 November 2026 while finishing the phases. None of them stop
 | Q3 | **Which neighbourhoods of Brikama?** (D3) | Collectors choose their areas from this list | Only `Brikama` exists. Add the rest on the admin screen under Areas: no code needed |
 | Q4 | **Who is the first admin?** Their phone number | Someone has to approve listings | Nobody. The step is in `docs/pilot/launch-checklist.md` |
 | Q5 | **Which Gambian legal adviser will check the privacy notice and retention policy?** | Phase 3 requires it before onboarding | Drafts are in `docs/legal/`, with questions for the adviser |
-| Q6 | **May I deploy the database changes to the hosted Supabase project?** It is paused, and my access to it was refused, so I did not touch it | The new features need five new migrations there | Not deployed. Two commands, in the launch checklist |
+| Q6 | ~~**May I deploy the database changes to the hosted Supabase project?**~~ Answered: yes | The new features needed five new migrations there | Deployed 23 Nov 2026 |
 
 ## Needed before the Play Store
 
