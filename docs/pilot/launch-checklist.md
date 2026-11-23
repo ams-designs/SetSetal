@@ -25,10 +25,10 @@ This works before SMS sign-in is switched on: an admin can sign in with a code s
 
 **By email (no SMS needed):**
 
-- [ ] Supabase dashboard → Authentication → Users → Add user → Create new user: the admin's email address, any strong password (it is never used), and tick "Auto Confirm User".
+- [x] (Done 23 Nov 2026 for the first admin.) Supabase dashboard → Authentication → Users → Add user → Create new user: the admin's email address, any strong password (it is never used), and tick "Auto Confirm User".
 - [ ] Authentication → Emails → Magic Link: add the line `Your SetSetal code is {{ .Token }}` to the message, so the email contains the 6-digit code the app asks for. Without it, the email holds only a link, which the app doesn't use.
 - [ ] Supabase's built-in email service sends only to addresses in the project's team and only a few an hour. That is enough for one admin. For more, set up your own SMTP under Authentication → Emails → SMTP Settings.
-- [ ] In the SQL editor: `insert into public.admins (user_id) select id from auth.users where email = 'admin@example.com';`
+- [x] (Done 23 Nov 2026.) In the SQL editor: `insert into public.admins (user_id) select id from auth.users where email = 'admin@example.com';`
 - [ ] Open `/#/admin`, enter the address, then the code from the email: the review queue appears.
 
 **By phone (once step 2 is done):**
