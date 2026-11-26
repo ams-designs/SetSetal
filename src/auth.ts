@@ -164,7 +164,9 @@ export async function currentSession(): Promise<Session | null> {
       writeSession(memorySession);
       return memorySession;
     }
-    if (response.status >= 400 && response.status < 500) {
+    // A refused refresh token ends the sign-in. "Too many requests" (429) and
+    // a timeout (408) are temporary, like network trouble: keep the session.
+    if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
       memorySession = null;
       writeSession(null);
       return null;

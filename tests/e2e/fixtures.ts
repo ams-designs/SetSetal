@@ -81,15 +81,15 @@ export { expect };
 export const COLLECTOR_ID = "00000000-0000-4000-8000-00000000000b";
 
 // Starts the page already signed in as a collector, skipping the SMS code.
-export async function signIn(page: Page, phone = "+2207000001", lastUsedDaysAgo = 0) {
-  await page.addInitScript(([id, number, daysAgo]) => {
+export async function signIn(page: Page, phone = "+2207000001", lastUsedDaysAgo = 0, expiresInMinutes = 60) {
+  await page.addInitScript(([id, number, daysAgo, minutes]) => {
     if (sessionStorage.getItem("seeded")) return;
     sessionStorage.setItem("seeded", "1");
     localStorage.setItem("setsetal.session.v1", JSON.stringify({
-      accessToken: "test-token", refreshToken: "test-refresh", expiresAt: Date.now() + 3600_000,
+      accessToken: "test-token", refreshToken: "test-refresh", expiresAt: Date.now() + Number(minutes) * 60_000,
       userId: id, phone: number, lastUsed: Date.now() - Number(daysAgo) * 86_400_000
     }));
-  }, [COLLECTOR_ID, phone, lastUsedDaysAgo] as const);
+  }, [COLLECTOR_ID, phone, lastUsedDaysAgo, expiresInMinutes] as const);
 }
 
 export interface CollectorRow {

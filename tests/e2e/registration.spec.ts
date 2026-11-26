@@ -218,6 +218,28 @@ test.describe("shared phones and honest saving", () => {
     await expect(page.getByText("On a shared phone, sign out when you finish.")).toBeVisible();
   });
 
+  test("a busy sign-in server doesn't sign the collector out", async ({ page, context, consoleErrors }) => {
+    await signIn(page, "+2207000001", 0, -1);
+    await mockCollectorBackend(context, { listing: approved });
+    await context.route(/\/auth\/v1\/token\?grant_type=refresh_token/, (route) =>
+      route.fulfill({ status: 429, json: { msg: "Request rate limit reached" } }));
+    await page.goto("./#/join");
+    await expect(page.getByText("Signed in as +2207000001")).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("setsetal.session.v1"))).not.toBeNull();
+    ignoreFailedRequests(consoleErrors);
+  });
+
+  test("a refused refresh token ends the sign-in", async ({ page, context, consoleErrors }) => {
+    await signIn(page, "+2207000001", 0, -1);
+    await mockCollectorBackend(context, { listing: approved });
+    await context.route(/\/auth\/v1\/token\?grant_type=refresh_token/, (route) =>
+      route.fulfill({ status: 400, json: { msg: "Invalid Refresh Token" } }));
+    await page.goto("./#/join");
+    await expect(page.getByLabel("Your phone number")).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("setsetal.session.v1"))).toBeNull();
+    ignoreFailedRequests(consoleErrors);
+  });
+
   test("the status panel shows who is signed in, with Sign out", async ({ page, context }) => {
     await signIn(page);
     await mockCollectorBackend(context, { listing: approved });
