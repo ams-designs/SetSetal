@@ -15,7 +15,8 @@ function track(event: UsageEvent): void {
 
 let lastSearch = "";
 
-// Counted once per search, not every time the same empty result is redrawn.
+// Counted once per search: tapping Search again on the same empty result isn't
+// counted again until a search has found something (resetNoResults).
 export function trackNoResults(filters: { area: string; vehicle: string; waste: string }): void {
   const search = `${filters.area}|${filters.vehicle}|${filters.waste}`;
   if (search === lastSearch) return;

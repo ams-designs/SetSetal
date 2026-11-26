@@ -22,6 +22,26 @@ test("a search that finds nothing is counted once, with only the filter values",
   await expect.poll(() => events).toEqual([{ name: "search_no_results", area: "all", vehicle: "all", waste: "bulky" }]);
 });
 
+test("the same empty search tried again after one that found listings is counted again", async ({ page, context }) => {
+  await mockListings(context, [cart]);
+  await mockLookups(context, [{ id: "brikama", name: "Brikama" }]);
+  const events = await recordEvents(context);
+  await page.goto("./#/find");
+  await expect(page.getByRole("heading", { name: "Brikama Donkey Cart" })).toBeVisible();
+  const search = page.getByRole("button", { name: "Show matching services" });
+  await page.getByLabel("Waste type").selectOption({ label: "Bulky items" });
+  await search.click();
+  await expect(page.getByRole("heading", { name: "No matching listings" })).toBeVisible();
+  await page.getByLabel("Waste type").selectOption({ value: "all" });
+  await search.click();
+  await expect(page.locator(".collector-card")).toHaveCount(1);
+  await page.getByLabel("Waste type").selectOption({ label: "Bulky items" });
+  await search.click();
+  await expect(page.getByRole("heading", { name: "No matching listings" })).toBeVisible();
+  const bulky = { name: "search_no_results", area: "all", vehicle: "all", waste: "bulky" };
+  await expect.poll(() => events).toEqual([bulky, bulky]);
+});
+
 test("a search that finds listings isn't counted", async ({ page, context }) => {
   await mockListings(context, [cart]);
   const events = await recordEvents(context);

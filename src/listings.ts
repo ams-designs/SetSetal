@@ -4,7 +4,7 @@ import {
   type Area, type VehicleId, type WasteId
 } from "./data/lookups";
 import { backendConfigured, fetchPublicCollectors, type PublicCollectorRow } from "./api";
-import { trackNoResults } from "./analytics";
+import { resetNoResults, trackNoResults } from "./analytics";
 import { $, escapeHTML } from "./ui";
 
 interface Collector {
@@ -377,8 +377,13 @@ export function renderCollectors(options: { searched?: boolean } = {}): void {
   $("#collector-results").innerHTML = results.length
     ? results.map(collectorCard).join("")
     : emptyState(filters.area === OTHER_AREA, demo);
-  // Only searches of real listings say anything about what is missing.
-  if (options.searched && !demo && results.length === 0) trackNoResults(filters);
+  // Only searches of real listings say anything about what is missing. A
+  // search that finds something starts the count afresh, so the same empty
+  // search tried again later is counted again.
+  if (options.searched && !demo) {
+    if (results.length === 0) trackNoResults(filters);
+    else resetNoResults();
+  }
 }
 
 const savedNote = (): string => t("listing.savedNote", { date: formatDate(savedAt ?? Date.now()) });
