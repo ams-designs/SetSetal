@@ -50,7 +50,9 @@ async function deliver(report: NewReport): Promise<"sent" | "sentUnlinked" | "re
   if (result === "sent") {
     // Counted by type only; the message stays in the report.
     trackReport(report.type);
-    if (report.collector_id) trackMarkedWrong(report.collector_id);
+    // Only a report that the listing is wrong counts against it, not a safety
+    // or accessibility report opened from the same profile.
+    if (report.collector_id && report.type === "incorrect-listing") trackMarkedWrong(report.collector_id);
   }
   if (result !== "link-rejected") return result;
   const unlinked = await sendReport({ ...report, collector_id: null });

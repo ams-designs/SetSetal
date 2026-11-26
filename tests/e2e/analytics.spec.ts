@@ -73,6 +73,21 @@ test("feedback is counted by type, without its text", async ({ page, context }) 
   expect(JSON.stringify(events)).not.toContain("7654321");
 });
 
+test("a safety report about a listing doesn't count as marking it wrong", async ({ page, context }) => {
+  await mockListings(context, [cart]);
+  const events = await recordEvents(context);
+  await context.route(/\/rest\/v1\/reports/, (route) => route.fulfill({ status: 201, body: "" }));
+  await page.goto(`./#/collector/${cart.id}`);
+  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
+  await page.getByLabel("What is this about?").selectOption({ label: "Safety concern" });
+  await page.getByLabel("Details").fill("The cart blocks the road");
+  await page.getByRole("button", { name: "Send feedback" }).click();
+  await expect(page.getByText("Feedback sent")).toBeVisible();
+  await expect.poll(() => events).toEqual([{ name: "report_submitted", report_type: "safety" }]);
+  await page.waitForTimeout(300);
+  expect(events).toEqual([{ name: "report_submitted", report_type: "safety" }]);
+});
+
 test("a browser that asks not to be tracked isn't counted", async ({ page, context }) => {
   await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "doNotTrack", { get: () => "1" }));
   await mockListings(context, [cart]);
