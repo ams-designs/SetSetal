@@ -2,7 +2,7 @@
 -- change lookup lists.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(25);
 
 insert into auth.users (id) values
   ('00000000-0000-0000-0000-00000000000a'),
@@ -77,6 +77,12 @@ select is((select public.app_lookups() -> 'waste_types'), '["household", "garden
 select is((select public.app_lookups() -> 'areas'),
   '[{"id": "nyambai", "name": "Nyambai"}, {"id": "brikama", "name": "Brikama"}]'::jsonb,
   'app_lookups includes area names, by sort order');
+
+-- A report sent again after a timeout ------------------------------------------
+select lives_ok($$insert into public.reports (id, type, message) values ('30000000-0000-4000-8000-000000000001', 'general', 'Sent once')$$,
+  'anon can send a report with an id made on the phone');
+select throws_ok($$insert into public.reports (id, type, message) values ('30000000-0000-4000-8000-000000000001', 'general', 'Sent once')$$,
+  '23505', null, 'the same report sent again is refused, not stored twice');
 
 select * from finish();
 rollback;

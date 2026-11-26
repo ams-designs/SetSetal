@@ -64,9 +64,12 @@ async function deliver(report: NewReport): Promise<"sent" | "sentUnlinked" | "re
 }
 
 export async function submitReport(report: NewReport): Promise<SubmitResult> {
-  const result = await deliver(report);
+  // The same id goes with every attempt, so if one that timed out did arrive,
+  // the next is refused as a duplicate instead of stored twice.
+  const withId = { ...report, id: report.id ?? crypto.randomUUID() };
+  const result = await deliver(withId);
   if (result !== "retry") return result;
-  return addToOutbox(report) ? "queued" : "failed";
+  return addToOutbox(withId) ? "queued" : "failed";
 }
 
 export interface FlushResult {

@@ -72,7 +72,8 @@ export function sendEvent(event: UsageEvent): void {
   }).catch(() => {});
 }
 
-export type NewReport = Pick<Database["public"]["Tables"]["reports"]["Insert"], "type" | "message" | "collector_id">;
+// The id is made on the phone, so a report sent again is recognised (see sendReport).
+export type NewReport = Pick<Database["public"]["Tables"]["reports"]["Insert"], "id" | "type" | "message" | "collector_id">;
 
 // "retry": it didn't arrive but may later (offline, a timeout, the server
 // busy). "link-rejected": the server refused the listing it names, usually
@@ -80,16 +81,20 @@ export type NewReport = Pick<Database["public"]["Tables"]["reports"]["Insert"], 
 // stands. "unavailable": this build has no server to send to.
 export type SendResult = "sent" | "retry" | "link-rejected" | "rejected" | "unavailable";
 
-async function refusedLink(response: Response, report: NewReport): Promise<boolean> {
-  if (!report.collector_id) return false;
+interface PostgrestError { code?: string; message?: string }
+
+async function errorOf(response: Response): Promise<PostgrestError> {
   try {
-    const error = (await response.json()) as { code?: string; message?: string };
-    return (error.code === "42501" && /row-level security/.test(error.message ?? "")) ||
-      (error.code === "23503" && /collector_id/.test(error.message ?? ""));
+    return (await response.json()) as PostgrestError;
   } catch {
-    return false;
+    return {};
   }
 }
+
+const refusedLink = (error: PostgrestError, report: NewReport): boolean =>
+  Boolean(report.collector_id) && (
+    (error.code === "42501" && /row-level security/.test(error.message ?? "")) ||
+    (error.code === "23503" && /collector_id/.test(error.message ?? "")));
 
 // Residents can't read reports back, so the insert asks for nothing in return.
 export async function sendReport(report: NewReport): Promise<SendResult> {
@@ -106,7 +111,11 @@ export async function sendReport(report: NewReport): Promise<SendResult> {
     });
     if (response.ok) return "sent";
     if (response.status >= 500 || response.status === 429) return "retry";
-    return (await refusedLink(response, report)) ? "link-rejected" : "rejected";
+    const error = await errorOf(response);
+    // An earlier attempt arrived, but its answer didn't (a timeout): the server
+    // already has this report.
+    if (report.id && error.code === "23505") return "sent";
+    return refusedLink(error, report) ? "link-rejected" : "rejected";
   } catch {
     return "retry";
   } finally {

@@ -36,7 +36,10 @@ test("feedback is sent to the SetSetal team, with nothing about the resident", a
   expect(sent).toHaveLength(1);
   expect(sent[0].method()).toBe("POST");
   expect(sent[0].headers()["prefer"]).toBe("return=minimal");
-  expect(sent[0].postDataJSON()).toEqual({ type: "safety", message: "The bins were not collected", collector_id: null });
+  expect(sent[0].postDataJSON()).toEqual({
+    id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/),
+    type: "safety", message: "The bins were not collected", collector_id: null
+  });
 });
 
 test("offline feedback is saved on the phone and sent later", async ({ page, context, consoleErrors }) => {
@@ -51,6 +54,32 @@ test("offline feedback is saved on the phone and sent later", async ({ page, con
   await expect(page.getByText("Your saved feedback has been sent.")).toBeVisible();
   expect(sent).toHaveLength(1);
   expect(await page.evaluate(() => localStorage.getItem("setsetal.outbox.v1"))).toBeNull();
+  ignoreFailedRequests(consoleErrors);
+});
+
+test("feedback that arrived although its answer didn't is not sent twice", async ({ page, context, consoleErrors }) => {
+  // The first attempt reaches the server, but the phone never hears back.
+  const attempts: Request[] = [];
+  await context.route(REPORTS, (route) => {
+    attempts.push(route.request());
+    return route.abort("timedout");
+  });
+  await page.goto("./#/help");
+  await fillReport(page);
+  await expect(page.getByText("Saved on this phone, not sent yet")).toBeVisible();
+
+  // Sent again, the server already has it and refuses the duplicate.
+  await context.unroute(REPORTS);
+  await context.route(REPORTS, (route) => {
+    attempts.push(route.request());
+    return route.fulfill({ status: 409, json: { code: "23505", message: 'duplicate key value violates unique constraint "reports_pkey"' } });
+  });
+  await page.reload();
+  await expect(page.getByText("Your saved feedback has been sent.")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("setsetal.outbox.v1"))).toBeNull();
+  const ids = attempts.map((request) => (request.postDataJSON() as { id: string }).id);
+  expect(ids).toHaveLength(2);
+  expect(ids[1]).toBe(ids[0]);
   ignoreFailedRequests(consoleErrors);
 });
 
