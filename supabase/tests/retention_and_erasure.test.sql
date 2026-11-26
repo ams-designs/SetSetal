@@ -48,7 +48,8 @@ insert into public.reports (id, type, message, status, resolved_at, created_at) 
   ('20000000-0000-0000-0000-000000000001', 'general', 'Closed long ago', 'resolved', now() - interval '13 months', now() - interval '14 months'),
   ('20000000-0000-0000-0000-000000000002', 'general', 'Closed recently', 'resolved', now() - interval '1 month', now() - interval '2 months'),
   ('20000000-0000-0000-0000-000000000003', 'general', 'Open and recent', 'open', null, now() - interval '3 months'),
-  ('20000000-0000-0000-0000-000000000004', 'general', 'Never closed', 'open', null, now() - interval '25 months');
+  ('20000000-0000-0000-0000-000000000004', 'general', 'Never closed', 'open', null, now() - interval '25 months'),
+  ('20000000-0000-0000-0000-000000000005', 'general', 'Old but closed recently', 'dismissed', now() - interval '1 week', now() - interval '25 months');
 insert into public.events (name, report_type, day) values
   ('report_submitted', 'general', (now() at time zone 'utc')::date - 400),
   ('report_submitted', 'general', (now() at time zone 'utc')::date - 10);
@@ -56,8 +57,8 @@ update public.audit_log set created_at = now() - interval '13 months' where coll
 
 select is((select private.apply_retention()), '{"reports": 2, "events": 1, "history": 1}'::jsonb,
   'the clean-up reports what it removed');
-select is((select array_agg(message order by message) from public.reports), array['Closed recently', 'Open and recent'],
-  'reports closed over 12 months ago, or never closed in 24, are removed');
+select is((select array_agg(message order by message) from public.reports), array['Closed recently', 'Old but closed recently', 'Open and recent'],
+  'reports closed over 12 months ago, or never closed in 24, are removed; an old report closed recently is kept');
 select is((select count(*)::int from public.events), 1, 'counts older than 12 months are removed');
 select is((select count(*)::int from public.audit_log where collector_id is null), 0,
   'history of deleted listings is removed after 12 months');

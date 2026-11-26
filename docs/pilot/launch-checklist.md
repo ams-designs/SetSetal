@@ -8,6 +8,7 @@ Do these once, in order. Steps marked **owner** need a decision or an account th
 - [x] Apply the migrations: `supabase link --project-ref gplmfpglapxicfghlkid`, then `supabase db push`. Five new migrations dated 14 Nov 2026 should be applied. Done 23 Nov 2026.
 - [x] Regenerate the types and check nothing changed unexpectedly: `supabase gen types typescript --project-id gplmfpglapxicfghlkid > src/types/db.ts`, then `npm run build`.
 - [x] In the SQL editor, check the nightly clean-up is scheduled (see `docs/legal/data-retention.md`), and that deleting an account works: `select has_table_privilege('postgres', 'auth.users', 'DELETE');` must be true. Both confirmed 23 Nov 2026 (`setsetal-retention`, 03:15 daily).
+- [ ] Apply `20261126090000_retention_keep_recently_closed.sql` with `supabase db push` (it keeps an old report for 12 months after it is closed). It changes no tables, so the types stay the same.
 - [ ] Push `adlai_changes`; check the preview (`BASE_URL=https://adlai-changes--setsetal.netlify.app npm test`); **owner** merges to `main`.
   - [x] Pushed and checked 23 Nov 2026: 124 passed, 4 skipped. The one failure is the captcha sign-in test, which needs `VITE_TURNSTILE_SITE_KEY` set in Netlify (step 2).
 
