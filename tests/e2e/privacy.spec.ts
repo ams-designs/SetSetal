@@ -22,3 +22,13 @@ test("the privacy notice says what is and isn't collected", async ({ page }) => 
   await expect(notice).toContainText("You can delete your listing and account from the Join screen");
   await expect(notice).toContainText("Feedback is deleted 12 months after it's dealt with");
 });
+
+test("the privacy notice starts with a short version in pictures", async ({ page }) => {
+  await page.goto("./#/privacy");
+  await expect(page.locator(".privacy-points li")).toHaveText([
+    "If you're looking for a collector, you don't sign in.",
+    "We never ask for your address.",
+    "We don't use your phone's location.",
+    "We never sell information or use it for advertising."
+  ]);
+});

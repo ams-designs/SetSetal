@@ -229,10 +229,15 @@
         </button>
         <h1 id="help-title" data-i18n="help.title"></h1>
       </div>
-      <div class="panel">
+      <div class="panel help-how">
         <h2 data-i18n="help.using.title"></h2>
+        <ol class="how-steps">
+          <li><span class="how-picture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="currentColor"/><circle cx="12" cy="10" r="2.6" fill="#FFFFFF"/></svg></span><span data-i18n="help.step.area"></span></li>
+          <li><span class="how-picture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12h12v5H2z" fill="currentColor"/><circle cx="6" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14h3l2-6 1.5-4 1 4-1 2-2 5v7M17 14v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></span><span data-i18n="help.step.collector"></span></li>
+          <li><span class="how-picture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z" fill="currentColor"/></svg></span><span data-i18n="help.step.call"></span></li>
+        </ol>
         <p data-i18n="help.using.body"></p>
-        <p id="help-listings-note" data-i18n="help.using.demo"></p>
+        <p id="help-listings-note" class="small-note" data-i18n="help.using.demo"></p>
       </div>
       <form id="report-form" class="panel form-panel report-form" novalidate>
         <h2 data-i18n="help.report.title"></h2>
@@ -260,6 +265,15 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <h1 id="privacy-title" data-i18n="privacy.title"></h1>
+      </div>
+      <div class="panel privacy-short">
+        <h2 data-i18n="privacy.short.title"></h2>
+        <ul class="privacy-points">
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21a8 8 0 0 1 16 0z" fill="currentColor"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.signIn"></span></li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8v10H3z" fill="currentColor"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.address"></span></li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="currentColor"/><circle cx="12" cy="10" r="2.6" fill="#FFFFFF"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.location"></span></li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v10M9 9.5h4.5a1.8 1.8 0 0 1 0 3.5h-3a1.8 1.8 0 0 0 0 3.5H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.sell"></span></li>
+        </ul>
       </div>
       <p class="intro" data-i18n="privacy.intro"></p>
       <div class="panel prose">
