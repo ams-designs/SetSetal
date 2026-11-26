@@ -8,7 +8,7 @@ Do these once, in order. Steps marked **owner** need a decision or an account th
 - [x] Apply the migrations: `supabase link --project-ref gplmfpglapxicfghlkid`, then `supabase db push`. Five new migrations dated 14 Nov 2026 should be applied. Done 23 Nov 2026.
 - [x] Regenerate the types and check nothing changed unexpectedly: `supabase gen types typescript --project-id gplmfpglapxicfghlkid > src/types/db.ts`, then `npm run build`.
 - [x] In the SQL editor, check the nightly clean-up is scheduled (see `docs/legal/data-retention.md`), and that deleting an account works: `select has_table_privilege('postgres', 'auth.users', 'DELETE');` must be true. Both confirmed 23 Nov 2026 (`setsetal-retention`, 03:15 daily).
-- [ ] Apply the two migrations dated 26 Nov 2026 with `supabase db push`, **before** the code that goes with them is pushed (previews use the live database too). Neither changes a table, so the types stay the same.
+- [x] (Done 26 Nov 2026.) Apply the two migrations dated 26 Nov 2026 with `supabase db push`, **before** the code that goes with them is pushed (previews use the live database too). Neither changes a table, so the types stay the same.
   - `20261126090000_retention_keep_recently_closed.sql` keeps an old report for 12 months after it is closed.
   - `20261126090100_report_ids_from_the_phone.sql` lets the phone give each report its id, so a report sent again after a timeout isn't stored twice. The app sends that id from the commit "Send each report with an id made on the phone": without the migration, the server refuses every report.
 - [ ] Push `adlai_changes`; check the preview (`BASE_URL=https://adlai-changes--setsetal.netlify.app npm test`); **owner** merges to `main`.
