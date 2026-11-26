@@ -52,6 +52,7 @@ async function mockAdmin(context: BrowserContext, options: {
   editedSince?: boolean;
   reportAlreadyClosed?: boolean;
   activityStatus?: number;
+  activity?: object;
 } = {}) {
   const actions: Request[] = [];
   await context.route(/\/auth\/v1\/logout/, (route) => route.fulfill({ status: 204, body: "" }));
@@ -70,7 +71,7 @@ async function mockAdmin(context: BrowserContext, options: {
     return route.fulfill({ json: [suspended, rejected] });
   });
   await context.route(/\/rest\/v1\/rpc\/admin_activity/, (route) =>
-    options.activityStatus ? route.fulfill({ status: options.activityStatus, json: {} }) : route.fulfill({ json: activity }));
+    options.activityStatus ? route.fulfill({ status: options.activityStatus, json: {} }) : route.fulfill({ json: options.activity ?? activity }));
   await context.route(/\/rest\/v1\/audit_log/, (route) => route.fulfill({ json: history }));
   await context.route(/\/rest\/v1\/reports/, (route) => {
     if (route.request().method() === "PATCH") {
@@ -402,6 +403,15 @@ test("activity shows counts, never anything about a resident", async ({ page, co
   await expect(section.locator(".stat-card", { hasText: "Reports about a listing" })).toContainText("0");
   await expect(section).toContainText("Lamin's tricycle: Call 5 · WhatsApp 2");
   await expect(section).toContainText("Other / not listed · All vehicle types · Bulky items");
+});
+
+test("counts from the server are shown as text, never as HTML", async ({ page, context }) => {
+  await signIn(page);
+  await mockAdmin(context, { activity: { ...activity, totals: { contact_tap: '<b id="injected">7</b>' } } });
+  await page.goto("./#/admin");
+  const card = page.locator(".stat-card", { hasText: "Taps on Call or WhatsApp" });
+  await expect(card).toContainText('<b id="injected">7</b>');
+  await expect(page.locator("#injected")).toHaveCount(0);
 });
 
 test("the admin screen still works when the activity counts can't be loaded", async ({ page, context, consoleErrors }) => {

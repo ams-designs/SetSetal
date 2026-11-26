@@ -375,7 +375,7 @@ function activitySection(activity: Activity | null): string {
   }
   const total = (name: keyof Activity["totals"]) => activity.totals[name] ?? 0;
   const stat = (label: MessageKey, value: number) =>
-    `<article class="stat-card"><span>${escapeHTML(t(label))}</span><strong>${value}</strong></article>`;
+    `<article class="stat-card"><span>${escapeHTML(t(label))}</span><strong>${escapeHTML(value)}</strong></article>`;
   const contacts = activity.contacts.length ? `
         <h3>${escapeHTML(t("admin.activity.contactsTitle"))}</h3>
         <ul class="history-list plain-list">${activity.contacts.map((row) => `
@@ -403,7 +403,7 @@ function activitySection(activity: Activity | null): string {
 function section(title: MessageKey, count: number, body: string, empty: MessageKey): string {
   return `
       <section class="admin-section">
-        <h2>${escapeHTML(t(title))} <span class="muted">(${count})</span></h2>
+        <h2>${escapeHTML(t(title))} <span class="muted">(${escapeHTML(count)})</span></h2>
         ${count ? body : `<p class="muted">${escapeHTML(t(empty))}</p>`}
       </section>`;
 }
@@ -417,9 +417,9 @@ function renderData(data: AdminData): void {
   const decisions = data.history.length + data.closedReports.length;
   $("#admin-content").innerHTML = `
       <div class="stats-grid">
-        <article class="stat-card"><span>${escapeHTML(t("admin.pending"))}</span><strong>${data.queue.length}</strong></article>
-        <article class="stat-card"><span>${escapeHTML(t("admin.openReports"))}</span><strong>${data.reports.length}</strong></article>
-        <article class="stat-card"><span>${escapeHTML(t("admin.live"))}</span><strong>${data.live.length}</strong></article>
+        <article class="stat-card"><span>${escapeHTML(t("admin.pending"))}</span><strong>${escapeHTML(data.queue.length)}</strong></article>
+        <article class="stat-card"><span>${escapeHTML(t("admin.openReports"))}</span><strong>${escapeHTML(data.reports.length)}</strong></article>
+        <article class="stat-card"><span>${escapeHTML(t("admin.live"))}</span><strong>${escapeHTML(data.live.length)}</strong></article>
       </div>
       ${section("admin.queueTitle", data.queue.length, cards(data.queue), "admin.queueEmpty")}
       ${section("admin.reportsTitle", data.reports.length, data.reports.map(reportCard).join(""), "admin.reportsEmpty")}
