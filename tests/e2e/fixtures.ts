@@ -190,3 +190,23 @@ export const smallTargets = (page: Page) =>
       .map(({ text, box }) => `${text} ${Math.round(box.width)}x${Math.round(box.height)}`));
 
 export const nav = (page: Page) => page.getByRole("navigation", { name: "Main navigation" });
+
+// Find: the area button opens the tiles in place; a tap picks one and the
+// list changes straight away. Vehicles are a row of picture buttons.
+export async function pickArea(page: Page, name: string) {
+  const button = page.locator("#area-button");
+  if (await button.getAttribute("aria-expanded") !== "true") await button.click();
+  await page.locator("#area-tiles").getByRole("button", { name, exact: true }).click();
+}
+export const pickVehicle = (page: Page, name: string) =>
+  page.locator("#vehicle-chips").getByRole("button", { name, exact: true }).click();
+
+// The choices on offer, as the resident sees them.
+export async function areaTiles(page: Page): Promise<string[]> {
+  const button = page.locator("#area-button");
+  if (await button.getAttribute("aria-expanded") !== "true") await button.click();
+  return (await page.locator("#area-tiles button").allTextContents()).map((text) => text.trim());
+}
+export const vehicleChips = async (page: Page): Promise<string[]> =>
+  (await page.locator("#vehicle-chips button").allTextContents()).map((text) => text.trim());
+export const openListing = (page: Page, index = 0) => page.locator(".card-link").nth(index).click();

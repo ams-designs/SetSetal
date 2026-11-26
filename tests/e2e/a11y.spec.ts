@@ -13,15 +13,19 @@ for (const hash of ["#/", "#/find", "#/collector/demo-van", "#/join", "#/help", 
   });
 }
 
-test("touch targets are at least 48px", async ({ page }) => {
+test("touch targets are at least 56px", async ({ page }) => {
   await page.goto("./#/find");
   // The screen slides in, so measure once it has settled.
   await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
   const small = await page.locator(".screen.active button, .bottom-nav button, .topbar button").evaluateAll((buttons) =>
     buttons
       .filter((button) => (button as HTMLElement).offsetParent !== null)
-      .map((button) => ({ text: button.textContent?.trim() || button.getAttribute("aria-label"), box: button.getBoundingClientRect() }))
-      .filter(({ box }) => box.height < 48 || box.width < 48)
+      // A card's name button stretches over the whole card top: that is its tap area.
+      .map((button) => ({
+        text: button.textContent?.trim() || button.getAttribute("aria-label"),
+        box: (button.closest(".card-head") ?? button).getBoundingClientRect()
+      }))
+      .filter(({ box }) => box.height < 56 || box.width < 56)
       .map(({ text, box }) => `${text} ${Math.round(box.width)}x${Math.round(box.height)}`));
   expect(small).toEqual([]);
 });

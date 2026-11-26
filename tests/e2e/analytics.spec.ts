@@ -1,4 +1,4 @@
-import { test, expect, mockListings, mockLookups, recordEvents } from "./fixtures";
+import { test, expect, mockListings, mockLookups, pickArea, pickVehicle, recordEvents } from "./fixtures";
 
 const cart = {
   id: "8b0c7a52-3f1e-4f43-9a51-1c2d3e4f5a61", name: "Brikama Donkey Cart", vehicle_type: "donkey-cart",
@@ -15,11 +15,11 @@ test("a search that finds nothing is counted once, with only the filter values",
   const events = await recordEvents(context);
   await page.goto("./#/find");
   await expect(page.getByRole("heading", { name: "Brikama Donkey Cart" })).toBeVisible();
-  await page.getByLabel("Waste type").selectOption({ label: "Bulky items" });
-  await page.getByRole("button", { name: "Show matching services" }).click();
+  await pickVehicle(page, "Horse cart");
   await expect(page.getByRole("heading", { name: "No matching listings" })).toBeVisible();
-  await page.getByRole("button", { name: "Show matching services" }).click();
-  await expect.poll(() => events).toEqual([{ name: "search_no_results", area: "all", vehicle: "all", waste: "bulky" }]);
+  // Tapping the same picture again is the same search.
+  await pickVehicle(page, "Horse cart");
+  await expect.poll(() => events).toEqual([{ name: "search_no_results", area: "all", vehicle: "horse-cart", waste: "all" }]);
 });
 
 test("the same empty search tried again after one that found listings is counted again", async ({ page, context }) => {
@@ -28,34 +28,30 @@ test("the same empty search tried again after one that found listings is counted
   const events = await recordEvents(context);
   await page.goto("./#/find");
   await expect(page.getByRole("heading", { name: "Brikama Donkey Cart" })).toBeVisible();
-  const search = page.getByRole("button", { name: "Show matching services" });
-  await page.getByLabel("Waste type").selectOption({ label: "Bulky items" });
-  await search.click();
+  await pickVehicle(page, "Horse cart");
   await expect(page.getByRole("heading", { name: "No matching listings" })).toBeVisible();
-  await page.getByLabel("Waste type").selectOption({ value: "all" });
-  await search.click();
+  await pickVehicle(page, "All");
   await expect(page.locator(".collector-card")).toHaveCount(1);
-  await page.getByLabel("Waste type").selectOption({ label: "Bulky items" });
-  await search.click();
+  await pickVehicle(page, "Horse cart");
   await expect(page.getByRole("heading", { name: "No matching listings" })).toBeVisible();
-  const bulky = { name: "search_no_results", area: "all", vehicle: "all", waste: "bulky" };
-  await expect.poll(() => events).toEqual([bulky, bulky]);
+  const horse = { name: "search_no_results", area: "all", vehicle: "horse-cart", waste: "all" };
+  await expect.poll(() => events).toEqual([horse, horse]);
 });
 
 test("a search that finds listings isn't counted", async ({ page, context }) => {
   await mockListings(context, [cart]);
   const events = await recordEvents(context);
   await page.goto("./#/find");
-  await page.getByRole("button", { name: "Show matching services" }).click();
+  await pickVehicle(page, "Donkey cart");
   await expect(page.locator(".collector-card")).toHaveCount(1);
+  await page.waitForTimeout(300);
   expect(events).toEqual([]);
 });
 
 test("searches of the demonstration listings aren't counted", async ({ page, context }) => {
   const events = await recordEvents(context);
   await page.goto("./#/find");
-  await page.getByLabel("Your area").selectOption({ label: "Other / not listed" });
-  await page.getByRole("button", { name: "Show matching services" }).click();
+  await pickArea(page, "My area isn't here");
   await expect(page.getByRole("heading", { name: "We don't have listings for your area yet" })).toBeVisible();
   expect(events).toEqual([]);
 });
@@ -114,8 +110,7 @@ test("a browser that asks not to be tracked isn't counted", async ({ page, conte
   const events = await recordEvents(context);
   await page.goto("./#/find");
   await expect(page.getByRole("heading", { name: "Brikama Donkey Cart" })).toBeVisible();
-  await page.getByLabel("Waste type").selectOption({ label: "Bulky items" });
-  await page.getByRole("button", { name: "Show matching services" }).click();
+  await pickVehicle(page, "Horse cart");
   await expect(page.getByRole("heading", { name: "No matching listings" })).toBeVisible();
   await page.waitForTimeout(300);
   expect(events).toEqual([]);

@@ -20,5 +20,5 @@ test("an untranslated locale falls back to English", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("setsetal.locale", "wo"));
   await page.goto("./");
   await expect(page.locator("html")).toHaveAttribute("lang", "wo");
-  await expect(page.getByRole("button", { name: "Find a collector" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "I need a collector" })).toBeVisible();
 });

@@ -5,37 +5,39 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("home buttons open the right screens", async ({ page }) => {
-  await page.getByRole("button", { name: "Find a collector" }).click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
   await expectScreen(page, "Find a collector", "#/find");
   await page.goBack();
-  await page.getByRole("button", { name: "Register as a collector" }).click();
+  await page.getByRole("button", { name: "I collect waste" }).click();
   await expectScreen(page, "Register your service", "#/join");
-  await page.getByRole("button", { name: "Open help" }).click();
+  await nav(page).getByRole("button", { name: "Help" }).click();
   await expectScreen(page, "Help and feedback", "#/help");
   await nav(page).getByRole("button", { name: "Home" }).click();
-  await expectScreen(page, "Find the right waste collector near you.", "#/");
+  await expectScreen(page, "Find someone to take your rubbish away.", "#/");
 });
 
 test("in-app back returns one screen at a time", async ({ page }) => {
-  await page.getByRole("button", { name: "Find a collector" }).click();
-  await page.getByRole("button", { name: "View details" }).first().click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
+  await page.locator(".card-link").first().click();
   await expectScreen(page, "Collector profile", "#/collector/demo-municipal");
 
   await page.locator(".screen.active").getByRole("button", { name: "Go back" }).click();
   await expectScreen(page, "Find a collector", "#/find");
-  await page.locator(".screen.active").getByRole("button", { name: "Go back" }).click();
-  await expectScreen(page, "Find the right waste collector near you.", "#/");
+  // Find is a main tab: it has no back arrow; the phone's back goes home.
+  await expect(page.locator(".screen.active").getByRole("button", { name: "Go back" })).toHaveCount(0);
+  await page.goBack();
+  await expectScreen(page, "Find someone to take your rubbish away.", "#/");
 });
 
 test("browser back (Android hardware back) returns one screen at a time", async ({ page }) => {
-  await page.getByRole("button", { name: "Find a collector" }).click();
-  await page.getByRole("button", { name: "View details" }).nth(1).click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
+  await page.locator(".card-link").nth(1).click();
   await expectScreen(page, "Collector profile", "#/collector/demo-truck");
 
   await page.goBack();
   await expectScreen(page, "Find a collector", "#/find");
   await page.goBack();
-  await expectScreen(page, "Find the right waste collector near you.", "#/");
+  await expectScreen(page, "Find someone to take your rubbish away.", "#/");
 
   await page.goForward();
   await page.goForward();
@@ -46,23 +48,26 @@ test("browser back (Android hardware back) returns one screen at a time", async 
 test("going back and forth does not grow the history stack", async ({ page }) => {
   const start = await page.evaluate(() => history.length);
   for (let i = 0; i < 3; i++) {
-    await page.getByRole("button", { name: "Find a collector" }).click();
+    await page.getByRole("button", { name: "I need a collector" }).click();
+    await page.locator(".card-link").first().click();
     await page.locator(".screen.active").getByRole("button", { name: "Go back" }).click();
-    await expectScreen(page, "Find the right waste collector near you.");
+    await page.goBack();
+    await expectScreen(page, "Find someone to take your rubbish away.");
   }
-  expect(await page.evaluate(() => history.length)).toBe(start + 1);
+  // Each round visits Find and a profile; later rounds replace them instead of adding more.
+  expect(await page.evaluate(() => history.length)).toBe(start + 2);
 });
 
 test("focus moves to the new screen's heading", async ({ page }) => {
-  await page.getByRole("button", { name: "Find a collector" }).click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Find a collector" })).toBeFocused();
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1, name: "Find the right waste collector near you." })).toBeFocused();
+  await expect(page.getByRole("heading", { level: 1, name: "Find someone to take your rubbish away." })).toBeFocused();
 });
 
 test("bottom nav marks the current section", async ({ page }) => {
-  await page.getByRole("button", { name: "Find a collector" }).click();
-  await page.getByRole("button", { name: "View details" }).first().click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
+  await page.locator(".card-link").first().click();
   await expect(nav(page).getByRole("button", { name: "Find" })).toHaveAttribute("aria-current", "page");
   await expect(nav(page).getByRole("button", { name: "Home" })).not.toHaveAttribute("aria-current");
 });
