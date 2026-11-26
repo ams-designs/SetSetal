@@ -51,6 +51,7 @@ This works before SMS sign-in is switched on: an admin can sign in with a code s
 - [ ] **Owner:** who legally owns the data (D4); legal adviser checks `docs/legal/`; fill the gaps and update the Privacy screen if the adviser changes anything.
 - [ ] **Owner:** decide what "verified" means (D2), or keep listings as "approved" only. Until then the app shows no "verified" badge.
 - [ ] Run through `docs/guide/README.md` on a real low-end Android phone, including the hardware back button, installing from the home screen button, and using the app with no connection (Phase 0 exit criterion).
+  - [x] Rehearsed in emulation 26 Nov 2026 on `adlai-changes--setsetal.netlify.app`: Pixel 5 screen, slow 3G (400 kbit/s, 400 ms) and a CPU slowed 4×. All 18 checks passed: buttons usable after 2.5 s, about 127 KB for the first visit, the service worker installed, the resident screens, back one screen at a time, buttons of 48 px or more, and Find, profiles and navigation working offline. Nothing was written to the database. Emulation can't show the **Install app** button, a real phone's speed or the physical back button, so the real-phone run above is still needed.
 
 ## 6. Go
 
