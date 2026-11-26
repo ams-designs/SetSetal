@@ -179,6 +179,35 @@ test("an account that isn't an admin is told so", async ({ page, context }) => {
   await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
 });
 
+test("an admin can sign out someone else's sign-in from the admin screen", async ({ page, context }) => {
+  await signIn(page);
+  await mockAdmin(context, { admin: false });
+  await page.goto("./#/admin");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByText("You're signed out.")).toBeVisible();
+  await expect(page.getByLabel("Your email address")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("setsetal.session.v1"))).toBeNull();
+});
+
+test("an admin signed in by email isn't offered the collector form on Join", async ({ page, context }) => {
+  await page.addInitScript((id) => {
+    if (sessionStorage.getItem("seeded")) return;
+    sessionStorage.setItem("seeded", "1");
+    localStorage.setItem("setsetal.session.v1", JSON.stringify({
+      accessToken: "test-token", refreshToken: "test-refresh", expiresAt: Date.now() + 3600_000,
+      userId: id, phone: "", email: "admin@example.com", lastUsed: Date.now()
+    }));
+  }, COLLECTOR_ID);
+  await mockAdmin(context);
+  await page.goto("./#/join");
+  await expect(page.getByText("You're signed in as an admin.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("Name or business name")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Delete my listing and account" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await page.getByRole("button", { name: "Go to the admin screen" }).click();
+  await expect(page.locator(".admin-card").first()).toContainText("Fatou's carts");
+});
+
 test("an admin sees the review queue, live listings, reports and history", async ({ page, context }) => {
   await signIn(page);
   await mockAdmin(context);

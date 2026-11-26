@@ -123,6 +123,8 @@
   "join.signin.adminNote": "Sign in to reach the admin tools.",
   "join.signedInAs": "Signed in as {phone}",
   "join.signOut": "Sign out",
+  "join.adminSession.body": "You're signed in as an admin. To register a collection service, sign out and sign in with your phone.",
+  "join.adminSession.cta": "Go to the admin screen",
   "join.signedOut": "You're signed out.",
   "join.whatsapp": "WhatsApp number (optional)",
   "join.whatsappPlaceholder": "Leave empty if you don't use WhatsApp",

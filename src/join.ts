@@ -211,6 +211,18 @@ function showStatus(listing: MyListing): void {
       </article>`;
 }
 
+// An admin signed in by email has no phone, so no listing of their own: the
+// collector form would make one owned by the admin account.
+function showAdminSignedIn(): void {
+  showOnly("#my-listing");
+  $("#delete-account").hidden = true;
+  $("#my-listing").innerHTML = `
+      <div class="notice">
+        <p>${escapeHTML(t("join.adminSession.body"))}</p>
+        <button class="button secondary" type="button" data-go="admin">${escapeHTML(t("join.adminSession.cta"))}</button>
+      </div>`;
+}
+
 function showLoadError(): void {
   showOnly("#my-listing");
   $("#my-listing").innerHTML = `
@@ -405,6 +417,11 @@ export async function renderJoin(): Promise<void> {
     loadedFor = session.userId;
   }
   $("#signed-in-as").textContent = t("join.signedInAs", { phone: session.phone || session.email || "" });
+  if (!session.phone && session.email) {
+    showAdminSignedIn();
+    return;
+  }
+  $("#delete-account").hidden = false;
   if (editing) {
     await showForm(session.phone);
     return;

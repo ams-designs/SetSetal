@@ -123,6 +123,8 @@
   "join.signin.adminNote": "",
   "join.signedInAs": "",
   "join.signOut": "",
+  "join.adminSession.body": "",
+  "join.adminSession.cta": "",
   "join.signedOut": "",
   "join.whatsapp": "",
   "join.whatsappPlaceholder": "",

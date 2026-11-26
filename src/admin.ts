@@ -9,7 +9,7 @@ import {
 } from "./data/lookups";
 import { call } from "./api";
 import {
-  currentSession, normaliseEmail, requestEmailCode, verifyEmailCode, type AuthResult, type Session
+  currentSession, normaliseEmail, requestEmailCode, signOut, verifyEmailCode, type AuthResult, type Session
 } from "./auth";
 import { captchaEnabled, showCaptcha, takeCaptchaToken } from "./captcha";
 import type { ListingStatus } from "./collector";
@@ -456,6 +456,13 @@ export function clearAdmin(): void {
   $("#admin-content").innerHTML = "";
 }
 
+async function signOutHere(): Promise<void> {
+  await signOut();
+  clearAdmin();
+  toast(t("join.signedOut"));
+  await renderAdmin();
+}
+
 export async function renderAdmin(): Promise<void> {
   const token = ++renderToken;
   $("#admin-content").innerHTML = `<p class="muted">${escapeHTML(t("join.loading"))}</p>`;
@@ -467,7 +474,9 @@ export async function renderAdmin(): Promise<void> {
   }
   try {
     if (!(await isAdmin(session))) {
-      if (token === renderToken) message("admin.notAdmin");
+      // On a shared phone this is often a collector's sign-in: let the admin
+      // sign it out here and sign in as themselves.
+      if (token === renderToken) message("admin.notAdmin", { id: "admin-sign-out", label: "join.signOut" });
       return;
     }
     const data = await loadData(session);
@@ -669,6 +678,7 @@ export function bindAdmin(): void {
     if (target.closest("#admin-refresh")) void renderAdmin();
     if (target.closest("#admin-email-change")) changeEmail();
     if (target.closest("#admin-sign-in")) signInThen("admin");
+    if (target.closest("#admin-sign-out")) void signOutHere();
   });
   content.addEventListener("submit", (event) => {
     const signInForm = (event.target as Element).closest<HTMLFormElement>("#admin-email-form, #admin-code-form");
