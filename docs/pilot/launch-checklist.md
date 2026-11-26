@@ -10,7 +10,9 @@ Do these once, in order. Steps marked **owner** need a decision or an account th
 - [x] In the SQL editor, check the nightly clean-up is scheduled (see `docs/legal/data-retention.md`), and that deleting an account works: `select has_table_privilege('postgres', 'auth.users', 'DELETE');` must be true. Both confirmed 23 Nov 2026 (`setsetal-retention`, 03:15 daily).
 - [ ] Apply `20261126090000_retention_keep_recently_closed.sql` with `supabase db push` (it keeps an old report for 12 months after it is closed). It changes no tables, so the types stay the same.
 - [ ] Push `adlai_changes`; check the preview (`BASE_URL=https://adlai-changes--setsetal.netlify.app npm test`); **owner** merges to `main`.
+  - Test the branch address above, not the pull request's `deploy-preview-1--setsetal.netlify.app`: Netlify adds a review toolbar to deploy previews, which covers the bottom nav and loads scripts that fail offline, so about seven tests fail there for reasons that aren't the app's.
   - [x] Pushed and checked 23 Nov 2026: 124 passed, 4 skipped. The one failure is the captcha sign-in test, which needs `VITE_TURNSTILE_SITE_KEY` set in Netlify (step 2).
+  - [x] Checked again 26 Nov 2026: 132 passed, 4 skipped, 3 failed. Two are the phone and email sign-in tests, which both need `VITE_TURNSTILE_SITE_KEY` set in Netlify (step 2). The third was the touch-target test measuring the screen while it slid in; the test now waits for it to settle.
 
 ## 2. Sign-in by SMS (**owner**, decisions D5 and Q4)
 

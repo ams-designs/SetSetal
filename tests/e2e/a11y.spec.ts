@@ -15,6 +15,8 @@ for (const hash of ["#/", "#/find", "#/collector/demo-van", "#/join", "#/help", 
 
 test("touch targets are at least 48px", async ({ page }) => {
   await page.goto("./#/find");
+  // The screen slides in, so measure once it has settled.
+  await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
   const small = await page.locator(".screen.active button, .bottom-nav button, .topbar button").evaluateAll((buttons) =>
     buttons
       .filter((button) => (button as HTMLElement).offsetParent !== null)
