@@ -222,7 +222,6 @@ const areaName = (listing: Listing, id: string): string =>
   (listing.demo ? DEMO_AREAS.find((area) => area.id === id)?.name : undefined) ?? areaLabel(id);
 const areaList = (listing: Listing): string => listing.areas.map((id) => areaName(listing, id)).join(", ");
 
-const wasteList = (waste: readonly WasteId[]): string => waste.map(wasteLabel).join(", ");
 
 const optionsHTML = (items: { value: string; label: string }[]): string =>
   items.map(({ value, label }) =>
@@ -445,30 +444,19 @@ export function renderProfile(id: string | null): void {
     return;
   }
 
-  const row = (label: string, value: string) => `
-        <div class="detail-row">
-          <strong>${escapeHTML(label)}</strong>
-          <p>${escapeHTML(value)}</p>
-        </div>`;
-
+  const about = descriptionOf(collector);
   $("#profile-content").innerHTML = `
       <article class="panel profile-card">
-        <div class="profile-title-row">
-          <div class="vehicle-art">${iconFor(collector.vehicle)}</div>
-          <div>
-            <h2>${escapeHTML(nameOf(collector))}</h2>
-            ${demoLabel(collector)}${todayLabel(collector)}
-          </div>
-        </div>${
-          (collector.availableToday ? `
-        <p class="small-note">${escapeHTML(t("profile.availableNote"))}</p>` : "") +
-          row(t("profile.vehicle"), vehicleLabel(collector.vehicle)) +
-          row(t("profile.area"), areaList(collector)) +
-          row(t("profile.waste"), wasteList(collector.waste)) +
-          (descriptionOf(collector) ? row(t("profile.about"), descriptionOf(collector)) : "")}${
+        <div class="profile-picture">${vehiclePicture(collector.vehicle)}<span>${escapeHTML(vehicleLabel(collector.vehicle))}</span></div>
+        <h2>${escapeHTML(nameOf(collector))}</h2>
+        <div class="profile-labels">${todayLabel(collector)}${demoLabel(collector)}</div>${
+          collector.availableToday ? `
+        <p class="small-note">${escapeHTML(t("profile.availableNote"))}</p>` : ""}
+        <p class="card-area profile-area">${icon("pin")}<span>${escapeHTML(areaList(collector))}</span></p>
+        ${wastePictures(collector.waste)}${about ? `
+        <div class="detail-row profile-about"><strong>${escapeHTML(t("profile.about"))}</strong><p>${escapeHTML(about)}</p></div>` : ""}${
           contactSection(collector)}${savedLine(collector)}
       </article>${collector.demo ? "" : `
-      <button class="button secondary full-width" type="button"
-        data-report="${escapeHTML(collector.id)}">${escapeHTML(t("profile.report"))}</button>`}
-      <button class="button secondary full-width" data-go="find">${escapeHTML(t("profile.allListings"))}</button>`;
+      <button class="button secondary full-width report-button" type="button"
+        data-report="${escapeHTML(collector.id)}">${icon("flag")}<span>${escapeHTML(t("profile.report"))}</span></button>`}`;
 }

@@ -1,4 +1,4 @@
-import { test, expect, mockListings } from "./fixtures";
+import { test, expect, chooseReason, details, mockListings, sendReport } from "./fixtures";
 import type { BrowserContext, Request } from "@playwright/test";
 
 const REPORTS = /\/rest\/v1\/reports/;
@@ -20,18 +20,18 @@ const ignoreFailedRequests = (consoleErrors: string[]) => {
 };
 
 async function fillReport(page: import("@playwright/test").Page, message = "The bins were not collected") {
-  await page.getByLabel("What is this about?").selectOption({ label: "Safety concern" });
-  await page.getByLabel("Details").fill(message);
-  await page.getByRole("button", { name: "Send feedback" }).click();
+  await chooseReason(page, "Something unsafe");
+  await details(page).fill(message);
+  await sendReport(page);
 }
 
 test("feedback is sent to the SetSetal team, with nothing about the resident", async ({ page, context }) => {
   const sent = await reportsAnswer(context, 201);
   await page.goto("./#/help");
-  await expect(page.getByText("Don't include your address or phone number")).toBeVisible();
+  await expect(page.getByText("Don't write your address or phone number", { exact: false })).toBeVisible();
   await fillReport(page);
-  await expect(page.getByText("Feedback sent")).toBeVisible();
-  await expect(page.getByLabel("Details")).toHaveValue("");
+  await expect(page.getByText("Sent. Thank you.")).toBeVisible();
+  await expect(details(page)).toHaveValue("");
 
   expect(sent).toHaveLength(1);
   expect(sent[0].method()).toBe("POST");
@@ -87,8 +87,8 @@ test("feedback the server refuses says so and stays in the form", async ({ page,
   await reportsAnswer(context, 400);
   await page.goto("./#/help");
   await fillReport(page, "Keep this text");
-  await expect(page.getByText("Feedback not sent")).toBeVisible();
-  await expect(page.getByLabel("Details")).toHaveValue("Keep this text");
+  await expect(page.getByText("Not sent", { exact: true })).toBeVisible();
+  await expect(details(page)).toHaveValue("Keep this text");
   ignoreFailedRequests(consoleErrors);
 });
 
@@ -100,19 +100,19 @@ test("a report from a listing is linked to that listing", async ({ page, context
   await mockListings(context, [cart]);
   const sent = await reportsAnswer(context, 201);
   await page.goto(`./#/collector/${cart.id}`);
-  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
-  await expect(page.getByText("About this listing: Brikama Donkey Cart")).toBeVisible();
-  await expect(page.getByLabel("What is this about?")).toHaveValue("incorrect-listing");
-  await page.getByLabel("Details").fill("Wrong phone number");
-  await page.getByRole("button", { name: "Send feedback" }).click();
-  await expect(page.getByText("Feedback sent")).toBeVisible();
+  await page.getByRole("button", { name: "Report a problem" }).click();
+  await expect(page.getByText("About: Brikama Donkey Cart")).toBeVisible();
+  await chooseReason(page, "Wrong number or details");
+  await details(page).fill("Wrong phone number");
+  await sendReport(page);
+  await expect(page.getByText("Sent. Thank you.")).toBeVisible();
   expect(sent[0].postDataJSON()).toMatchObject({ type: "incorrect-listing", collector_id: cart.id });
 });
 
 test("demonstration listings have no report link", async ({ page }) => {
   await page.goto("./#/collector/demo-van");
   await expect(page.getByRole("heading", { level: 2, name: "Small-load collection" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Report a problem with this listing" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Report a problem" })).toHaveCount(0);
 });
 
 
@@ -132,23 +132,37 @@ test("if the listing is no longer shown, the report goes without it and says so"
       : route.fulfill({ status: 201, body: "" });
   });
   await page.goto(`./#/collector/${cartRow.id}`);
-  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
-  await page.getByLabel("Details").fill("Wrong phone number");
-  await page.getByRole("button", { name: "Send feedback" }).click();
+  await page.getByRole("button", { name: "Report a problem" }).click();
+  await chooseReason(page, "Wrong number or details");
+  await details(page).fill("Wrong phone number");
+  await sendReport(page);
   await expect(page.getByText("That listing is no longer shown, so we sent your feedback without linking it.")).toBeVisible();
   expect(sent.map((request) => (request.postDataJSON() as { collector_id: string | null }).collector_id))
     .toEqual([cartRow.id, null]);
   ignoreFailedRequests(consoleErrors);
 });
 
-test("a message of only spaces is caught before sending", async ({ page, context }) => {
+test("a reason must be chosen, but writing is optional", async ({ page, context }) => {
   const sent = await reportsAnswer(context, 201);
   await page.goto("./#/help");
-  await page.getByLabel("Details").fill("   \n  ");
-  await page.getByRole("button", { name: "Send feedback" }).click();
-  expect(await page.getByLabel("Details").evaluate((field: HTMLTextAreaElement) => field.validationMessage))
-    .toBe("Please write a few words about what happened.");
+  await sendReport(page);
+  await expect(page.getByText("Choose what happened.")).toBeVisible();
   expect(sent).toHaveLength(0);
+  // A resident who can't write taps a picture and sends.
+  await chooseReason(page, "They didn't come");
+  await expect(page.getByText("Choose what happened.")).toBeHidden();
+  await sendReport(page);
+  await expect(page.getByText("Sent. Thank you.")).toBeVisible();
+  expect(sent[0].postDataJSON()).toMatchObject({ type: "no-show", message: "", collector_id: null });
+});
+
+test("the result shows big, with a tick when sent", async ({ page, context }) => {
+  await reportsAnswer(context, 201);
+  await page.goto("./#/help");
+  await chooseReason(page, "They came late");
+  await sendReport(page);
+  await expect(page.locator("#report-feedback")).toHaveClass(/result-done/);
+  await expect(page.locator("#report-feedback")).toBeInViewport();
 });
 
 test("saved feedback that the server later refuses is removed, and the resident is told", async ({ page, context, consoleErrors }) => {
@@ -165,9 +179,9 @@ test("saved feedback that the server later refuses is removed, and the resident 
 test("opening Help from the menu starts feedback that isn't about a listing", async ({ page, context }) => {
   await mockListings(context, [cartRow]);
   await page.goto(`./#/collector/${cartRow.id}`);
-  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
-  await expect(page.getByText("About this listing: Brikama Donkey Cart")).toBeVisible();
+  await page.getByRole("button", { name: "Report a problem" }).click();
+  await expect(page.getByText("About: Brikama Donkey Cart")).toBeVisible();
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Home" }).click();
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Help" }).click();
-  await expect(page.getByText("About this listing: Brikama Donkey Cart")).toBeHidden();
+  await expect(page.getByText("About: Brikama Donkey Cart")).toBeHidden();
 });

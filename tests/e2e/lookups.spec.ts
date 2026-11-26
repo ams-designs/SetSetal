@@ -1,12 +1,10 @@
-import { test, expect, areaTiles, mockListings, mockLookups, pickVehicle, vehicleChips } from "./fixtures";
+import { test, expect, areaTiles, mockListings, mockLookups, pickVehicle, reasonTiles, vehicleChips } from "./fixtures";
 
 const cart = {
   id: "8b0c7a52-3f1e-4f43-9a51-1c2d3e4f5a61", name: "Brikama Donkey Cart", vehicle_type: "donkey-cart",
   description: "", phone: null, whatsapp: null, areas: ["nyambai"], waste_types: ["household"], available_today: false
 };
 
-const options = (page: import("@playwright/test").Page, label: string) =>
-  page.getByLabel(label).locator("option").allInnerTexts();
 
 test("with real listings, the area filter offers the database's areas", async ({ page, context }) => {
   await mockListings(context, [cart]);
@@ -33,7 +31,7 @@ test("a type the database has switched off is no longer offered", async ({ page,
   await page.goto("./#/find");
   await expect.poll(() => vehicleChips(page)).toEqual(["All", "Tricycle", "Donkey cart"]);
   await page.goto("./#/help");
-  await expect.poll(() => options(page, "What is this about?")).toEqual(["General feedback", "Safety concern"]);
+  await expect.poll(() => reasonTiles(page)).toEqual(["Something else", "Something unsafe"]);
 });
 
 test("a type this version of the app has no label for is left out", async ({ page, context }) => {

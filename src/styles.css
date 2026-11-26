@@ -611,3 +611,98 @@ h1[tabindex="-1"]:focus { outline: none; }
 }
 .empty-state { display: grid; gap: 10px; justify-items: center; }
 .empty-state .button { width: auto; min-width: 220px; }
+
+/* Profile: the vehicle picture first, then who, where and what. */
+.profile-card { display: grid; gap: 10px; }
+.profile-card h2 { margin: 4px 0 0; font-size: 27px; line-height: 1.15; overflow-wrap: anywhere; }
+.profile-picture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px 10px;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border-radius: 20px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.profile-picture .picture { width: 150px; height: 112px; }
+.profile-labels:empty { display: none; }
+.profile-card .waste-list { margin: 0; }
+.profile-card .small-note { margin: 0; }
+.profile-area { margin: 0; font-size: 18px; }
+.profile-about { border-top: 1px solid var(--border); border-bottom: 0; }
+.contact-profile { flex-direction: column; }
+.contact-profile .button { flex: 0 0 auto; }
+.report-button { color: #8F1C13; border-color: #E8C3BE; }
+.report-button .icon { width: 24px; height: 24px; }
+
+/* Report a problem: pick a picture; writing is optional. */
+.report-form legend { padding: 0; margin-bottom: 8px; color: var(--green-dark); font-size: 22px; font-weight: 800; }
+.reason-group { margin: 0; padding: 0; border: 0; }
+.reason-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.reason-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 116px;
+  margin: 0;
+  padding: 12px 8px;
+  color: var(--text);
+  text-align: center;
+  background: var(--ivory);
+  border: 2px solid #D5E2D9;
+  border-radius: 18px;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: transform .12s cubic-bezier(.2, .8, .2, 1);
+}
+.reason-tile:active { transform: scale(.97); }
+.reason-tile input { position: absolute; opacity: 0; pointer-events: none; }
+.reason-tile .picture { width: 52px; height: 52px; }
+.reason-tile:has(input:checked) { color: var(--green-dark); background: var(--green-soft); border: 3px solid var(--green); }
+.reason-tile:has(input:checked)::after {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  content: "";
+  background: var(--green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 12.5 4 4L18 8' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
+  border-radius: 50%;
+}
+.reason-tile:has(input:focus-visible) { outline: 3px solid var(--green); outline-offset: 2px; }
+.reason-group.has-error .reason-tile { border-color: #E8A39B; }
+.report-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 10px 14px;
+  background: #FDF1D3;
+  border: 1px solid #F0D58C;
+  border-radius: 16px;
+}
+.report-target p { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 800; }
+.report-target .icon { color: #8F1C13; }
+.send-button .icon { width: 24px; height: 24px; }
+
+/* Results shown big: a tick when done, a clock when waiting, a warning when not sent. */
+.result { display: flex; align-items: flex-start; gap: 14px; padding: 16px; border-radius: 20px; }
+.result strong { display: block; font-size: 21px; }
+.result p { margin: 4px 0 0; }
+.result-icon { width: 44px; height: 44px; }
+.result-done { background: var(--green-soft); border: 2px solid #9FD3BD; }
+.result-done .result-icon { color: var(--green); }
+.result-waiting { background: #FDF1D3; border: 2px solid #F0D58C; }
+.result-waiting .result-icon { color: #A06A00; }
+.result-problem { background: #FCE9E7; border: 2px solid #E8A39B; }
+.result-problem .result-icon { color: var(--error); }
+.reason-error { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 18px; }

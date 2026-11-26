@@ -212,14 +212,20 @@
         <p data-i18n="help.using.body"></p>
         <p id="help-listings-note" data-i18n="help.using.demo"></p>
       </div>
-      <form id="report-form" class="panel form-panel">
+      <form id="report-form" class="panel form-panel report-form" novalidate>
         <h2 data-i18n="help.report.title"></h2>
-        <div id="report-target" class="notice" hidden></div>
-        <label for="report-type" data-i18n="help.report.type"></label>
-        <select id="report-type" name="type"></select>
+        <div id="report-target" class="report-target" hidden></div>
+        <fieldset class="reason-group" aria-describedby="report-type-error">
+          <legend data-i18n="help.report.type"></legend>
+          <p id="report-type-error" class="field-error reason-error" hidden data-i18n="help.report.chooseReason"></p>
+          <div id="report-reasons" class="reason-tiles"></div>
+        </fieldset>
         <label for="report-message" data-i18n="help.report.details"></label>
-        <textarea id="report-message" name="message" required maxlength="1000" rows="4" data-i18n-placeholder="help.report.detailsPlaceholder"></textarea>
-        <button id="report-submit" class="button primary" type="submit" data-i18n="help.report.submit"></button>
+        <textarea id="report-message" name="message" maxlength="1000" rows="3" data-i18n-placeholder="help.report.detailsPlaceholder"></textarea>
+        <button id="report-submit" class="button primary send-button" type="submit">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11.5 21 3l-6.5 18-3-7.5z" fill="currentColor"/><path d="m11.5 13.5 4-4" stroke="#147D59" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span id="report-submit-label" data-i18n="help.report.submit"></span>
+        </button>
         <p class="small-note" data-i18n="help.report.privacy"></p>
       </form>
       <div id="report-feedback" class="feedback" role="status" hidden></div>

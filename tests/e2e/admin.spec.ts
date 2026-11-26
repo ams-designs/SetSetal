@@ -351,7 +351,7 @@ test("report decisions are in the history and can be reopened", async ({ page, c
   const actions = await mockAdmin(context);
   await page.goto("./#/admin");
   const history = page.locator(".history-list:not(.plain-list)");
-  await expect(history).toContainText("Report (Incorrect listing)");
+  await expect(history).toContainText("Report (Wrong number or details)");
   await expect(history).toContainText("Dismissed");
   await expect(history).toContainText("Note: Number checked by phone");
   await history.getByRole("button", { name: "Reopen this report" }).click();

@@ -2,7 +2,7 @@
 // type and main action has one. Filled, two-tone, one outline colour and
 // weight, so they read at a glance in bright sun. Always paired with a label
 // (visible or accessible); never shown alone as the only way to know a thing.
-import type { VehicleId, WasteId } from "./data/lookups";
+import type { ReportTypeId, VehicleId, WasteId } from "./data/lookups";
 
 const INK = "#174B3A";
 const line = `stroke="${INK}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"`;
@@ -68,6 +68,37 @@ const wasteBodies: Record<WasteId, string> = {
     <path d="M19 41V29h10v12" fill="#147D59" ${line}/>`
 };
 
+const reportBodies: Record<ReportTypeId, string> = {
+  // A house with the door shut and nobody at it.
+  "no-show": `
+    <path d="M6 22 24 8l18 14v20H6z" fill="#E8B84A" ${line}/>
+    <path d="M19 42V30h10v12" fill="#FFFFFF" ${line}/>
+    <circle cx="36" cy="34" r="9" fill="#B42318" ${line}/>
+    <path d="m32.5 30.5 7 7m0-7-7 7" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>`,
+  late: `
+    <circle cx="24" cy="25" r="17" fill="#FDF1D3" ${line}/>
+    <path d="M24 14v11l8 5" fill="none" ${line}/>
+    <path d="M16 5h16" ${line}/>`,
+  "incorrect-listing": `
+    <rect x="13" y="5" width="22" height="38" rx="5" fill="#FFFFFF" ${line}/>
+    <path d="M19 12h10M19 18h10M19 24h6" stroke="#9AA49E" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="33" cy="34" r="9" fill="#B42318" ${line}/>
+    <path d="m29.5 30.5 7 7m0-7-7 7" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>`,
+  safety: `
+    <path d="M24 5 44 41H4z" fill="#E8B84A" ${line}/>
+    <path d="M24 18v11" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="24" cy="35" r="2.2" fill="${INK}"/>`,
+  general: `
+    <path d="M7 9h34v24H22l-9 8v-8H7z" fill="#E7F2EA" ${line}/>
+    <circle cx="16" cy="21" r="2.4" fill="${INK}"/><circle cx="24" cy="21" r="2.4" fill="${INK}"/><circle cx="32" cy="21" r="2.4" fill="${INK}"/>`,
+  accessibility: `
+    <rect x="12" y="4" width="24" height="40" rx="5" fill="#FFFFFF" ${line}/>
+    <circle cx="24" cy="21" r="8" fill="#FDF1D3" ${line}/>
+    <path d="M21 18.5a3 3 0 1 1 4 2.8c-.8.3-1 .8-1 1.6M24 26h.01" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`
+};
+
+export const reportPicture = (id: ReportTypeId): string => svg("0 0 48 48", reportBodies[id], "picture report-picture");
+
 export const vehiclePicture = (id: VehicleId): string => svg("0 0 64 48", vehicleBodies[id], "picture vehicle-picture");
 export const wastePicture = (id: WasteId): string => svg("0 0 48 48", wasteBodies[id], "picture waste-picture");
 
@@ -82,6 +113,11 @@ const ui = {
   check: `<path d="m4.5 12.5 5 5L19.5 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
   noPhone: `<path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z" fill="currentColor" opacity=".55"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`,
   chevron: `<path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  tick: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  clock: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M12 6v6l4 2.5" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>`,
+  warning: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M12 6.5v7" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1.5" fill="#FFFFFF"/>`,
+  send: `<path d="M3 11.5 21 3l-6.5 18-3-7.5z" fill="currentColor"/><path d="m11.5 13.5 4-4" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>`,
+  flag: `<path d="M5 22V3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M5 4h13l-3 4.5L18 13H5z" fill="currentColor"/>`,
   question: `<circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.7M12 17h.01" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`
 } as const;
 

@@ -1,4 +1,4 @@
-import { test, expect, mockListings, mockLookups, pickArea, pickVehicle, recordEvents } from "./fixtures";
+import { test, expect, chooseReason, details, mockListings, mockLookups, pickArea, pickVehicle, recordEvents, sendReport } from "./fixtures";
 
 const cart = {
   id: "8b0c7a52-3f1e-4f43-9a51-1c2d3e4f5a61", name: "Brikama Donkey Cart", vehicle_type: "donkey-cart",
@@ -78,10 +78,11 @@ test("feedback is counted by type, without its text", async ({ page, context }) 
   const events = await recordEvents(context);
   await context.route(/\/rest\/v1\/reports/, (route) => route.fulfill({ status: 201, body: "" }));
   await page.goto(`./#/collector/${cart.id}`);
-  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
-  await page.getByLabel("Details").fill("The number is wrong, call me on 7654321");
-  await page.getByRole("button", { name: "Send feedback" }).click();
-  await expect(page.getByText("Feedback sent")).toBeVisible();
+  await page.getByRole("button", { name: "Report a problem" }).click();
+  await chooseReason(page, "Wrong number or details");
+  await details(page).fill("The number is wrong, call me on 7654321");
+  await sendReport(page);
+  await expect(page.getByText("Sent. Thank you.")).toBeVisible();
   await expect.poll(() => events).toEqual([
     { name: "report_submitted", report_type: "incorrect-listing" },
     { name: "listing_marked_wrong", collector_id: cart.id }
@@ -94,11 +95,11 @@ test("a safety report about a listing doesn't count as marking it wrong", async 
   const events = await recordEvents(context);
   await context.route(/\/rest\/v1\/reports/, (route) => route.fulfill({ status: 201, body: "" }));
   await page.goto(`./#/collector/${cart.id}`);
-  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
-  await page.getByLabel("What is this about?").selectOption({ label: "Safety concern" });
-  await page.getByLabel("Details").fill("The cart blocks the road");
-  await page.getByRole("button", { name: "Send feedback" }).click();
-  await expect(page.getByText("Feedback sent")).toBeVisible();
+  await page.getByRole("button", { name: "Report a problem" }).click();
+  await chooseReason(page, "Something unsafe");
+  await details(page).fill("The cart blocks the road");
+  await sendReport(page);
+  await expect(page.getByText("Sent. Thank you.")).toBeVisible();
   await expect.poll(() => events).toEqual([{ name: "report_submitted", report_type: "safety" }]);
   await page.waitForTimeout(300);
   expect(events).toEqual([{ name: "report_submitted", report_type: "safety" }]);

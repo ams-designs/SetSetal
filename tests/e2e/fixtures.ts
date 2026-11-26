@@ -210,3 +210,11 @@ export async function areaTiles(page: Page): Promise<string[]> {
 export const vehicleChips = async (page: Page): Promise<string[]> =>
   (await page.locator("#vehicle-chips button").allTextContents()).map((text) => text.trim());
 export const openListing = (page: Page, index = 0) => page.locator(".card-link").nth(index).click();
+
+// Report a problem: a picture tile per reason; writing is optional.
+export const chooseReason = (page: Page, name: string) =>
+  page.locator("#report-reasons").getByText(name, { exact: true }).click();
+export const reasonTiles = async (page: Page): Promise<string[]> =>
+  (await page.locator("#report-reasons label").allTextContents()).map((text) => text.trim());
+export const details = (page: Page) => page.getByLabel("Tell us more (you can skip this)");
+export const sendReport = (page: Page) => page.getByRole("button", { name: "Send", exact: true }).click();
