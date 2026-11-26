@@ -7,14 +7,35 @@ const ignoreFailedRequests = (consoleErrors: string[]) => {
   expect(others).toEqual([]);
 };
 
-async function fillValid(page: Page) {
-  await page.getByLabel("Name or business name").fill("Fatou's carts");
+// The listing form asks one question per screen.
+const next = (page: Page) => page.getByRole("button", { name: "Next", exact: true }).click();
+const stepCount = (page: Page) => page.locator("#step-count");
+
+// Answers the first four questions (name, phone, vehicle, areas) and stops at
+// "What do you take?".
+async function fillValid(page: Page, options: { name?: string; areas?: string[] } = {}) {
+  await page.getByLabel("Name or business name").fill(options.name ?? "Fatou's carts");
+  await next(page);
   await page.getByLabel("Phone number for residents").fill("712 3456");
-  await page.getByLabel("Vehicle or collection method").selectOption({ label: "Donkey cart" });
-  await page.getByRole("checkbox", { name: "Brikama" }).check();
+  await next(page);
+  await page.getByRole("radio", { name: "Donkey cart" }).check();
+  await next(page);
+  const areas = options.areas ?? ["Brikama"];
+  for (const area of areas) await page.getByRole("checkbox", { name: area, exact: true }).check();
+  await next(page);
+  if (areas.length) await expect(stepCount(page)).toHaveText("Step 5 of 6");
 }
 
-const preview = (page: Page) => page.getByRole("button", { name: "Preview my listing" }).click();
+// Goes on to the last question, as far as the answers allow.
+async function toLastStep(page: Page) {
+  const submit = page.getByRole("button", { name: "Preview my listing" });
+  for (let i = 0; i < 6 && !(await submit.isVisible()); i++) await next(page);
+}
+
+async function preview(page: Page) {
+  await toLastStep(page);
+  await page.getByRole("button", { name: "Preview my listing" }).click();
+}
 
 const approved: CollectorRow = {
   id: "10000000-0000-4000-8000-000000000001",
@@ -84,47 +105,54 @@ test.describe("registering", () => {
     await mockCollectorBackend(context);
     await page.goto("./#/join");
     await expect(page.getByLabel("Name or business name")).toBeVisible();
-    await page.getByLabel("Phone number for residents").fill("");
-    await preview(page);
-    await expectScreen(page, "Register your service");
+    await next(page);
+    await expect(stepCount(page)).toHaveText("Step 1 of 6");
     expect(await page.getByLabel("Name or business name").evaluate((input: HTMLInputElement) => input.validity.valid)).toBe(false);
+    await page.getByLabel("Name or business name").fill("Fatou's carts");
+    await next(page);
+    await page.getByLabel("Phone number for residents").fill("");
+    await next(page);
+    await expect(stepCount(page)).toHaveText("Step 2 of 6");
+    await expectScreen(page, "Register your service");
   });
 
   test("at least one area and one waste type are required", async ({ page, context }) => {
     await mockCollectorBackend(context);
     await page.goto("./#/join");
-    await fillValid(page);
-    await page.getByRole("checkbox", { name: "Brikama" }).uncheck();
-    await preview(page);
-    await expect(page.getByRole("alert")).toHaveText("Choose at least one area.");
+    await fillValid(page, { areas: [] });
+    await expect(stepCount(page)).toHaveText("Step 4 of 6");
+    await expect(page.getByRole("alert").filter({ hasText: /./ })).toHaveText("Choose at least one area.");
     await page.getByRole("checkbox", { name: "Nyambai" }).check();
-    await preview(page);
-    await expect(page.getByRole("alert")).toHaveText("Choose at least one waste type.");
+    await next(page);
+    await next(page);
+    await expect(stepCount(page)).toHaveText("Step 5 of 6");
+    await expect(page.getByRole("alert").filter({ hasText: /./ })).toHaveText("Choose at least one waste type.");
     await expect(page.getByRole("checkbox", { name: "Household bags" })).toHaveAttribute("aria-invalid", "true");
   });
 
   test("a bad WhatsApp number is caught", async ({ page, context }) => {
     await mockCollectorBackend(context);
     await page.goto("./#/join");
-    await fillValid(page);
-    await page.getByRole("checkbox", { name: "Household bags" }).check();
+    await page.getByLabel("Name or business name").fill("Fatou's carts");
+    await next(page);
     await page.getByLabel("WhatsApp number (optional)").fill("12");
-    await preview(page);
+    await next(page);
     await expect(page.getByText("Enter the WhatsApp number as 7 digits", { exact: false })).toBeVisible();
+    await expect(stepCount(page)).toHaveText("Step 2 of 6");
   });
 
   test("the preview shows what residents will see and submits it for review", async ({ page, context }) => {
     const { saved } = await mockCollectorBackend(context);
     await page.goto("./#/join");
-    await fillValid(page);
-    await page.getByRole("checkbox", { name: "Nyambai" }).check();
+    await fillValid(page, { areas: ["Brikama", "Nyambai"] });
     await page.getByRole("checkbox", { name: "Garden waste" }).check();
     await page.getByRole("checkbox", { name: "Recyclables" }).check();
+    await toLastStep(page);
     await page.getByRole("checkbox", { name: /Show my phone and WhatsApp numbers/ }).check();
     await preview(page);
 
     await expectScreen(page, "Your listing preview", "#/join/preview");
-    await expect(page.locator("#preview-content li")).toHaveText(["Garden waste", "Recyclables"]);
+    await expect(page.locator("#preview-content .waste-list li")).toHaveText(["Garden waste", "Recyclables"]);
     await expect(page.locator("#preview-content")).toContainText("Brikama, Nyambai");
     await expect(page.getByText("Not published yet")).toBeVisible();
     await expect(page.getByText("An admin checks new details before residents see them.", { exact: false })).toBeVisible();
@@ -155,12 +183,38 @@ test.describe("registering", () => {
   test("names are shown as text, never as HTML", async ({ page, context }) => {
     await mockCollectorBackend(context);
     await page.goto("./#/join");
-    await fillValid(page);
-    await page.getByLabel("Name or business name").fill("<img src=x onerror=alert(1)>");
+    await fillValid(page, { name: "<img src=x onerror=alert(1)>" });
     await page.getByRole("checkbox", { name: "Bulky items" }).check();
     await preview(page);
     await expect(page.getByRole("heading", { level: 2, name: "<img src=x onerror=alert(1)>" })).toBeVisible();
     await expect(page.locator("#preview-content img")).toHaveCount(0);
+  });
+
+  test("one question per screen: Back keeps answers, Enter goes on", async ({ page, context }) => {
+    await mockCollectorBackend(context);
+    await page.goto("./#/join");
+    await expect(stepCount(page)).toHaveText("Step 1 of 6");
+    await expect(page.getByRole("button", { name: "Back", exact: true })).toBeHidden();
+    await page.getByLabel("Name or business name").fill("Fatou's carts");
+    // The phone keyboard's Enter key moves on instead of sending the form.
+    await page.getByLabel("Name or business name").press("Enter");
+    await expect(stepCount(page)).toHaveText("Step 2 of 6");
+    await expect(page.getByRole("heading", { name: "Which number should residents call?" })).toBeFocused();
+    await page.getByRole("button", { name: "Back", exact: true }).click();
+    await expect(page.getByLabel("Name or business name")).toHaveValue("Fatou's carts");
+  });
+
+  test("the vehicle is chosen by picture, and skipping it says so", async ({ page, context }) => {
+    await mockCollectorBackend(context);
+    await page.goto("./#/join");
+    await page.getByLabel("Name or business name").fill("Fatou's carts");
+    await next(page);
+    await next(page);
+    await next(page);
+    await expect(page.getByText("Choose your vehicle.")).toBeVisible();
+    await expect(stepCount(page)).toHaveText("Step 3 of 6");
+    await page.getByRole("radio", { name: "Horse cart" }).check();
+    await expect(page.getByText("Choose your vehicle.")).toBeHidden();
   });
 
   test("going back from the preview keeps what was typed", async ({ page, context }) => {
@@ -170,8 +224,10 @@ test.describe("registering", () => {
     await page.getByRole("checkbox", { name: "Household bags" }).check();
     await preview(page);
     await page.getByRole("button", { name: "Edit details" }).click();
+    // Back on the last question, with every earlier answer kept.
+    await expect(stepCount(page)).toHaveText("Step 6 of 6");
     await expect(page.getByLabel("Name or business name")).toHaveValue("Fatou's carts");
-    await expect(page.getByRole("checkbox", { name: "Household bags" })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Household bags", includeHidden: true })).toBeChecked();
   });
 });
 
@@ -188,8 +244,15 @@ test.describe("an existing listing", () => {
     await page.getByRole("button", { name: "Edit my listing" }).click();
     await expect(page.getByLabel("Name or business name")).toHaveValue("Fatou's carts");
     await expect(page.getByLabel("Phone number for residents")).toHaveValue("+2207123456");
-    await expect(page.getByRole("checkbox", { name: "Brikama" })).toBeChecked();
-    await expect(page.getByRole("checkbox", { name: "Household bags" })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Brikama", includeHidden: true })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Household bags", includeHidden: true })).toBeChecked();
+    await expect(stepCount(page)).toHaveText("Step 1 of 6");
+  });
+
+  test("each status has its own colour and picture", async ({ page, context }) => {
+    await mockCollectorBackend(context, { listing: { ...approved, status: "rejected" }, reason: "The phone number didn't answer" });
+    await page.goto("./#/join");
+    await expect(page.locator(".status-box")).toHaveClass(/result-problem/);
   });
 
   test("an approved listing without consent explains residents can't call", async ({ page, context }) => {
@@ -267,6 +330,7 @@ test.describe("shared phones and honest saving", () => {
     await mockCollectorBackend(context, { listing: approved, statusAfterSave: "approved" });
     await page.goto("./#/join");
     await page.getByRole("button", { name: "Edit my listing" }).click();
+    await toLastStep(page);
     await page.getByRole("checkbox", { name: /Show my phone and WhatsApp numbers/ }).check();
     await preview(page);
     await page.getByRole("button", { name: "Submit for review" }).click();

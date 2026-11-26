@@ -213,7 +213,7 @@ export const openListing = (page: Page, index = 0) => page.locator(".card-link")
 
 // Report a problem: a picture tile per reason; writing is optional.
 export const chooseReason = (page: Page, name: string) =>
-  page.locator("#report-reasons").getByText(name, { exact: true }).click();
+  page.getByRole("radio", { name, exact: true }).check();
 export const reasonTiles = async (page: Page): Promise<string[]> =>
   (await page.locator("#report-reasons label").allTextContents()).map((text) => text.trim());
 export const details = (page: Page) => page.getByLabel("Tell us more (you can skip this)");

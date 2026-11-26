@@ -2,9 +2,10 @@
 // listing, check the preview, submit it for review, then follow its status.
 import { t, type MessageKey } from "./i18n";
 import {
-  areaLabel, areas, freshLookups, isVehicle, isWaste, vehicleLabel, wasteLabel, type VehicleId, type WasteId
+  areaLabel, areas, freshLookups, isVehicle, isWaste, vehicleLabel, wasteLabel, type WasteId
 } from "./data/lookups";
-import { fillSelect, iconFor, reloadListings, vehicleOptions, wasteOptions } from "./listings";
+import { reloadListings, vehicleOptions, wasteOptions } from "./listings";
+import { icon, vehiclePicture, wastePicture, type UiIcon } from "./icons";
 import { currentSession, forgetSession, normalisePhone, requestCode, signOut, verifyCode, type AuthResult } from "./auth";
 import { captchaEnabled, showCaptcha, takeCaptchaToken } from "./captcha";
 import {
@@ -50,6 +51,7 @@ function resetCollectorState(): void {
   editing = false;
   formFilled = false;
   loadedFor = null;
+  step = 0;
   $<HTMLFormElement>("#registration-form").reset();
   $("#delete-confirm").hidden = true;
 }
@@ -60,24 +62,39 @@ const SECTIONS = ["#join-loading", "#join-signin", "#my-listing", "#registration
 
 function showOnly(selector: string): void {
   SECTIONS.forEach((section) => { $(section).hidden = section !== selector; });
+  // The intro explains signing in; once signed in, the questions speak for themselves.
+  $("#join-intro").hidden = selector !== "#join-signin";
   $("#signed-in").hidden = selector === "#join-signin" || selector === "#join-loading";
   $("#registration-feedback").hidden = true;
 }
 
-const checkboxes = (name: string, items: { value: string; label: string }[]): string =>
-  items.map(({ value, label }) => `
-      <label class="checkbox-row">
-        <input type="checkbox" name="${escapeHTML(name)}" value="${escapeHTML(value)}">
-        <span>${escapeHTML(label)}</span>
+// Big tiles, each a real checkbox or radio stretched over its picture, so a
+// tap anywhere on the tile picks it and screen readers hear the label.
+const tiles = (type: "checkbox" | "radio", name: string, items: { value: string; label: string; picture?: string }[]): string =>
+  items.map(({ value, label, picture }) => `
+      <label class="pick-tile">
+        <input type="${type}" name="${escapeHTML(name)}" value="${escapeHTML(value)}">
+        ${picture ?? ""}<span>${escapeHTML(label)}</span>
       </label>`).join("");
+
+const checkedValues = (selector: string): string[] =>
+  $$<HTMLInputElement>(`${selector} input:checked`).map((input) => input.value);
+
+function restoreChecked(selector: string, values: readonly string[]): void {
+  for (const input of $$<HTMLInputElement>(`${selector} input`)) input.checked = values.includes(input.value);
+}
 
 // Runs at start-up and again when the lists arrive from the server. What the
 // collector has already chosen is kept.
 export function populateJoin(): void {
-  fillSelect($<HTMLSelectElement>("#provider-vehicle"), vehicleOptions());
-  const ticked = $$<HTMLInputElement>("#provider-waste-options input:checked").map((input) => input.value);
-  $("#provider-waste-options").innerHTML = checkboxes("waste", wasteOptions());
-  for (const input of $$<HTMLInputElement>("#provider-waste-options input")) input.checked = ticked.includes(input.value);
+  const vehicle = checkedValues("#provider-vehicle-options");
+  $("#provider-vehicle-options").innerHTML = tiles("radio", "vehicle",
+    vehicleOptions().map((option) => ({ ...option, picture: vehiclePicture(option.value) })));
+  restoreChecked("#provider-vehicle-options", vehicle);
+  const waste = checkedValues("#provider-waste-options");
+  $("#provider-waste-options").innerHTML = tiles("checkbox", "waste",
+    wasteOptions().map((option) => ({ ...option, picture: wastePicture(option.value) })));
+  restoreChecked("#provider-waste-options", waste);
 }
 
 const areaName = areaLabel;
@@ -107,15 +124,17 @@ const SIGNIN_ERRORS: Record<Exclude<AuthResult, "ok">, MessageKey> = {
   failed: "join.signin.error.failed"
 };
 
+// Shows a word like "Saving…" on the button while it works, then puts back
+// what was there before (its own markup, icon included).
 export async function busy<T>(button: HTMLButtonElement, label: MessageKey, task: () => Promise<T>): Promise<T> {
-  const idle = button.textContent;
+  const idle = button.innerHTML;
   button.disabled = true;
   button.textContent = t(label);
   try {
     return await task();
   } finally {
     button.disabled = false;
-    button.textContent = idle;
+    button.innerHTML = idle;
   }
 }
 
@@ -178,6 +197,16 @@ function changeNumber(): void {
 
 // Status -------------------------------------------------------------------------
 
+// Each status has its own colour and picture, so it can be told apart
+// without reading: a clock while waiting, a tick when approved, a warning
+// when not approved, a pause when suspended.
+const STATUS_LOOK: Record<MyListing["status"], { look: string; icon: UiIcon }> = {
+  submitted: { look: "waiting", icon: "clock" },
+  approved: { look: "done", icon: "tick" },
+  rejected: { look: "problem", icon: "warning" },
+  suspended: { look: "paused", icon: "pause" }
+};
+
 function showStatus(listing: MyListing): void {
   showOnly("#my-listing");
   const paragraph = (text: string) => `<p>${escapeHTML(text)}</p>`;
@@ -186,27 +215,31 @@ function showStatus(listing: MyListing): void {
     listing.reason ? paragraph(t("join.status.reason", { reason: listing.reason })) : "",
     listing.status === "approved" && !listing.consent ? paragraph(t("join.status.approvedNoConsent")) : ""
   ].join("");
-  const summary = [
-    isVehicle(listing.vehicle) ? vehicleLabel(listing.vehicle) : listing.vehicle,
-    listing.areas.map(areaName).join(", ")
-  ].filter(Boolean).join(" · ");
+  const { look, icon: name } = STATUS_LOOK[listing.status];
+  const vehicle = isVehicle(listing.vehicle) ? listing.vehicle : null;
+  const today = listing.availableToday;
 
   $("#my-listing").innerHTML = `
-      <article class="panel">
+      <article class="panel my-listing">
         <h2>${escapeHTML(t("join.status.title"))}</h2>
-        <h3>${escapeHTML(listing.name)}</h3>
-        <p class="muted">${escapeHTML(summary)}</p>
-        <div class="notice">
-          <strong>${escapeHTML(t(`join.status.${listing.status}`))}</strong>
-          ${lines}
+        <div class="my-listing-head">
+          ${vehicle ? `<div class="card-picture">${vehiclePicture(vehicle)}</div>` : ""}
+          <div>
+            <h3>${escapeHTML(listing.name)}</h3>
+            <p class="card-area">${icon("pin")}<span>${escapeHTML(listing.areas.map(areaName).join(", "))}</span></p>
+          </div>
+        </div>
+        <div class="result result-${look} status-box">
+          ${icon(name, "icon result-icon")}
+          <div><strong>${escapeHTML(t(`join.status.${listing.status}`))}</strong>${lines}</div>
         </div>${listing.status === "approved" ? `
-        <div class="today-panel">
-          <strong>${escapeHTML(t(listing.availableToday ? "join.today.on" : "join.today.off"))}</strong>
+        <div class="today-panel${today ? " is-on" : ""}">
+          <strong>${icon("sun")}<span>${escapeHTML(t(today ? "join.today.on" : "join.today.off"))}</span></strong>
           <p class="small-note">${escapeHTML(t("join.today.note"))}</p>
-          <button class="button ${listing.availableToday ? "secondary" : "primary"} full-width" type="button" id="toggle-today"
-            data-available="${listing.availableToday ? "0" : "1"}">${escapeHTML(t(listing.availableToday ? "join.today.turnOff" : "join.today.turnOn"))}</button>
+          <button class="button ${today ? "secondary" : "primary"} full-width" type="button" id="toggle-today"
+            data-available="${today ? "0" : "1"}">${icon("sun")}<span>${escapeHTML(t(today ? "join.today.turnOff" : "join.today.turnOn"))}</span></button>
         </div>` : ""}
-        <button class="button secondary full-width" type="button" id="edit-listing">${escapeHTML(t("join.status.edit"))}</button>
+        <button class="button secondary full-width" type="button" id="edit-listing">${icon("pencil")}<span>${escapeHTML(t("join.status.edit"))}</span></button>
         <p class="small-note">${escapeHTML(t(listing.status === "suspended" ? "join.status.suspendedEditNote" : "join.status.editNote"))}</p>
       </article>`;
 }
@@ -258,16 +291,78 @@ function fillForm(listing: MyListing | null, signedInPhone: string): void {
   form.reset();
   setGroupError("areas", false);
   setGroupError("waste", false);
-  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
+  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement;
   field("name").value = listing?.name ?? "";
   field("phone").value = listing?.phone || signedInPhone;
   field("whatsapp").value = listing?.whatsapp ?? "";
-  field("vehicle").value = listing?.vehicle ?? "";
   field("description").value = listing?.description ?? "";
   $<HTMLInputElement>("#provider-consent").checked = listing?.consent ?? false;
-  for (const input of $$<HTMLInputElement>("#registration-form input[type=checkbox][name=area], #registration-form input[type=checkbox][name=waste]")) {
-    input.checked = (input.name === "area" ? listing?.areas : listing?.waste)?.includes(input.value) ?? false;
+  restoreChecked("#provider-vehicle-options", listing ? [listing.vehicle] : []);
+  restoreChecked("#provider-area-options", listing?.areas ?? []);
+  restoreChecked("#provider-waste-options", listing?.waste ?? []);
+}
+
+// One question per screen. It stays one form; only its steps take turns.
+let step = 0;
+const steps = (): HTMLFieldSetElement[] => $$<HTMLFieldSetElement>("#registration-form .join-step");
+
+function showStep(index: number, focus = true): void {
+  const all = steps();
+  step = Math.max(0, Math.min(index, all.length - 1));
+  all.forEach((fieldset, i) => { fieldset.hidden = i !== step; });
+  const last = step === all.length - 1;
+  $("#step-back").hidden = step === 0;
+  $("#step-next").hidden = last;
+  $("#step-submit").hidden = !last;
+  $("#step-count").textContent = t("join.stepCount", { step: step + 1, total: all.length });
+  $("#step-bar-fill").style.width = `${((step + 1) / all.length) * 100}%`;
+  feedback("#registration-feedback", null);
+  if (focus) {
+    // Start each question at the top, under the step counter.
+    $("#registration-form").scrollIntoView({ block: "start" });
+    $<HTMLElement>("h2", all[step]).focus({ preventScroll: true });
   }
+}
+
+const value = (name: string): string =>
+  String(new FormData($<HTMLFormElement>("#registration-form")).get(name) ?? "").trim();
+
+// Checks one step. On a problem it says what, puts focus there and returns false.
+function stepIsValid(index: number): boolean {
+  const fieldset = steps()[index];
+  const error = (key: MessageKey, focus: string): false => {
+    feedback("#registration-feedback", key);
+    $(focus).focus();
+    return false;
+  };
+  for (const control of $$<HTMLInputElement | HTMLTextAreaElement>("input:not([type=checkbox]):not([type=radio]), textarea", fieldset)) {
+    if (!control.checkValidity()) {
+      control.reportValidity();
+      return false;
+    }
+  }
+  switch (fieldset.dataset.step) {
+    case "phone":
+      if (!normalisePhone(value("phone"))) return error("join.error.phone", "#provider-phone");
+      if (value("whatsapp") && !normalisePhone(value("whatsapp"))) return error("join.error.whatsapp", "#provider-whatsapp");
+      return true;
+    case "vehicle":
+      return isVehicle(value("vehicle")) || error("join.error.lists", "#provider-vehicle-options input");
+    case "areas":
+    case "waste": {
+      const group = fieldset.dataset.step;
+      const none = checkedValues(`#provider-${group === "areas" ? "area" : "waste"}-options`).length === 0;
+      setGroupError(group, none);
+      if (none) $(`#provider-${group} input`).focus();
+      return !none;
+    }
+    default:
+      return true;
+  }
+}
+
+function nextStep(): void {
+  if (stepIsValid(step)) showStep(step + 1);
 }
 
 async function showForm(signedInPhone: string): Promise<void> {
@@ -277,50 +372,46 @@ async function showForm(signedInPhone: string): Promise<void> {
     return;
   }
   if (!$("#provider-area-options").querySelector("input")) {
-    $("#provider-area-options").innerHTML = checkboxes("area", areas().map((area) => ({ value: area.id, label: area.name })));
+    $("#provider-area-options").innerHTML = tiles("checkbox", "area", areas().map((area) => ({ value: area.id, label: area.name })));
   }
   if (!formFilled) {
     fillForm(myListing, signedInPhone);
     formFilled = true;
+    showStep(0, false);
+  } else {
+    showStep(step, false);
   }
 }
 
+// Enter on a phone keyboard goes to the next question; on the last one it
+// opens the preview. Every step is checked again before the preview.
 function handleRegistration(event: SubmitEvent): void {
   event.preventDefault();
-  const form = event.currentTarget as HTMLFormElement;
-  if (!form.reportValidity()) return;
-
-  const data = new FormData(form);
-  const phone = normalisePhone(String(data.get("phone") ?? ""));
-  const whatsappInput = String(data.get("whatsapp") ?? "").trim();
-  const whatsapp = whatsappInput ? normalisePhone(whatsappInput) : "";
-  const vehicle = String(data.get("vehicle") ?? "");
-  const chosenAreas = data.getAll("area").map(String).filter((id) => areas().some((area) => area.id === id));
-  const waste = data.getAll("waste").map(String).filter(isWaste);
-
-  const error = (key: MessageKey, focus: string) => {
-    feedback("#registration-feedback", key);
-    $(focus).focus();
-  };
-  if (!phone) return error("join.error.phone", "#provider-phone");
-  if (whatsapp === null) return error("join.error.whatsapp", "#provider-whatsapp");
-  if (!isVehicle(vehicle)) return error("join.error.lists", "#provider-vehicle");
-  setGroupError("areas", chosenAreas.length === 0);
-  if (chosenAreas.length === 0) return void $("#provider-areas input").focus();
-  setGroupError("waste", waste.length === 0);
-  if (waste.length === 0) return void $("#provider-waste input").focus();
-
-  feedback("#registration-feedback", null);
+  const all = steps();
+  if (step < all.length - 1) {
+    nextStep();
+    return;
+  }
+  for (let index = 0; index < all.length; index++) {
+    if (!stepIsValid(index)) {
+      if (index !== step) {
+        showStep(index);
+        stepIsValid(index);
+      }
+      return;
+    }
+  }
+  const whatsapp = value("whatsapp");
   draft = {
     id: myListing?.id ?? null,
-    name: String(data.get("name") ?? "").trim(),
-    vehicle,
-    description: String(data.get("description") ?? "").trim(),
-    phone,
-    whatsapp,
-    areas: chosenAreas,
-    waste,
-    consent: data.get("consent") !== null
+    name: value("name"),
+    vehicle: value("vehicle"),
+    description: value("description"),
+    phone: normalisePhone(value("phone")) ?? "",
+    whatsapp: whatsapp ? normalisePhone(whatsapp) ?? "" : "",
+    areas: checkedValues("#provider-area-options").filter((id) => areas().some((area) => area.id === id)),
+    waste: checkedValues("#provider-waste-options").filter(isWaste),
+    consent: $<HTMLInputElement>("#provider-consent").checked
   };
   go("preview");
 }
@@ -329,29 +420,25 @@ function handleRegistration(event: SubmitEvent): void {
 
 export function renderPreview(): void {
   const listing = draft;
-  if (!listing) return;
-  const row = (label: string, value: string) =>
-    `<div class="detail-row"><strong>${escapeHTML(label)}</strong><p>${escapeHTML(value)}</p></div>`;
+  if (!listing || !isVehicle(listing.vehicle)) return;
+  const row = (label: string, text: string) =>
+    `<div class="detail-row"><strong>${escapeHTML(label)}</strong><p>${escapeHTML(text)}</p></div>`;
 
   $("#preview-feedback").hidden = true;
   $("#preview-content").innerHTML = `
       <article class="panel profile-card">
-        <div class="profile-title-row">
-          <div class="vehicle-art">${iconFor(listing.vehicle as VehicleId)}</div>
-          <div>
-            <h2>${escapeHTML(listing.name)}</h2>
-            <span class="demo-label">${escapeHTML(t("preview.notPublished"))}</span>
-          </div>
-        </div>
-        ${row(t("preview.vehicle"), vehicleLabel(listing.vehicle as VehicleId))}
-        ${row(t("preview.area"), listing.areas.map(areaName).join(", "))}
-        <div class="detail-row"><strong>${escapeHTML(t("preview.waste"))}</strong>
-          <ul class="detail-list">${listing.waste.map((id) => `<li>${escapeHTML(wasteLabel(id as WasteId))}</li>`).join("")}</ul>
-        </div>
+        <div class="profile-picture">${vehiclePicture(listing.vehicle)}<span>${escapeHTML(vehicleLabel(listing.vehicle))}</span></div>
+        <h2>${escapeHTML(listing.name)}</h2>
+        <div class="profile-labels"><span class="demo-label">${escapeHTML(t("preview.notPublished"))}</span></div>
+        <p class="card-area profile-area">${icon("pin")}<span>${escapeHTML(listing.areas.map(areaName).join(", "))}</span></p>
+        <ul class="waste-list">${listing.waste.map((id) => `
+          <li>${wastePicture(id as WasteId)}<span>${escapeHTML(wasteLabel(id as WasteId))}</span></li>`).join("")}
+        </ul>
         ${row(t("preview.phoneForResidents"), listing.phone)}
         ${listing.whatsapp ? row(t("preview.whatsapp"), listing.whatsapp) : ""}
-        ${row(t("preview.consent"), t(listing.consent ? "preview.consentYes" : "preview.consentNo"))}
-        ${row(t("preview.description"), listing.description || t("preview.noDescription"))}
+        <p class="consent-line ${listing.consent ? "is-yes" : "is-no"}">${icon(listing.consent ? "tick" : "noPhone")}<span>${
+          escapeHTML(t("preview.consent"))}: ${escapeHTML(t(listing.consent ? "preview.consentYes" : "preview.consentNo"))}</span></p>
+        ${listing.description ? row(t("preview.description"), listing.description) : ""}
         <p class="small-note">${escapeHTML(t("preview.reviewNote"))}</p>
       </article>`;
 }
@@ -495,6 +582,9 @@ export function bindJoin(): void {
   $<HTMLFormElement>("#signin-code-form").addEventListener("submit", (event) => void handleCode(event));
   $("#signin-change").addEventListener("click", changeNumber);
   $<HTMLFormElement>("#registration-form").addEventListener("submit", handleRegistration);
+  $("#step-next").addEventListener("click", nextStep);
+  $("#step-back").addEventListener("click", () => showStep(step - 1));
+  $("#provider-vehicle-options").addEventListener("change", () => feedback("#registration-feedback", null));
   for (const group of ["areas", "waste"] as const) {
     $(`#provider-${group}`).addEventListener("change", () => {
       if ($$(`#provider-${group} input:checked`).length > 0) setGroupError(group, false);

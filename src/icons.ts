@@ -113,6 +113,8 @@ const ui = {
   check: `<path d="m4.5 12.5 5 5L19.5 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
   noPhone: `<path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z" fill="currentColor" opacity=".55"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`,
   chevron: `<path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+  pause: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M9.5 7.5v9M14.5 7.5v9" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>`,
+  pencil: `<path d="M4 20h4L19 9l-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="m13.5 6.5 4 4" stroke="currentColor" stroke-width="2.2"/>`,
   tick: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="m6.5 12.5 3.5 3.5 7.5-8" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
   clock: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M12 6v6l4 2.5" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>`,
   warning: `<circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M12 6.5v7" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1.5" fill="#FFFFFF"/>`,
