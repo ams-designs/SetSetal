@@ -65,28 +65,31 @@ test("guide screenshots", async ({ page, context }) => {
   })));
   await shot(page, "01-home");
 
-  await page.getByRole("button", { name: "Find a collector" }).click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
   await expect(page.locator(".collector-card")).toHaveCount(2);
   await shot(page, "02-find");
 
-  await page.getByLabel("Your area").selectOption({ label: "Brikama Kabafita" });
-  await page.getByRole("button", { name: "Show matching services" }).click();
+  await page.locator("#area-button").click();
+  await shotOf(page, page.locator(".area-picker"), "03a-choose-area");
+  await page.locator("#area-tiles").getByRole("button", { name: "Brikama Kabafita" }).click();
   await expect(page.locator(".collector-card")).toHaveCount(1);
   await shot(page, "03-find-filtered");
 
-  await page.getByLabel("Your area").selectOption({ label: "Other / not listed" });
-  await page.getByRole("button", { name: "Show matching services" }).click();
+  await page.locator("#area-button").click();
+  await page.locator("#area-tiles").getByRole("button", { name: "My area isn't here" }).click();
   await shotOf(page, page.locator("#collector-results"), "04-no-listings-for-area");
 
-  await page.getByRole("button", { name: "Clear filters" }).click();
-  await page.locator(".collector-card", { hasText: "Lamin's tricycle" }).getByRole("button", { name: "View details" }).click();
+  await page.locator("#area-button").click();
+  await page.locator("#area-tiles").getByRole("button", { name: "All areas" }).click();
+  await page.locator(".collector-card", { hasText: "Lamin's tricycle" }).locator(".card-link").click();
   await shot(page, "05-profile");
 
-  await page.getByRole("button", { name: "Report a problem with this listing" }).click();
-  await page.getByLabel("Details").fill("He came two hours late on Saturday.");
-  await shot(page, "06-report");
-  await page.getByRole("button", { name: "Send feedback" }).click();
-  await expect(page.getByText("Feedback sent")).toBeVisible();
+  await page.getByRole("button", { name: "Report a problem" }).click();
+  await page.getByRole("radio", { name: "They came late" }).check();
+  await page.getByLabel("Tell us more (you can skip this)").fill("He came two hours late on Saturday.");
+  await shotOf(page, page.locator("#report-form"), "06-report");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByText("Sent. Thank you.")).toBeVisible();
   await shotOf(page, page.locator("#report-feedback"), "07-report-sent");
 
   await page.locator(".screen.active").getByRole("button", { name: "Privacy" }).click();
@@ -101,16 +104,26 @@ test("guide screenshots", async ({ page, context }) => {
   await shot(page, "11-enter-code");
   await page.getByRole("button", { name: "Sign in" }).click();
 
+  // One question per screen.
+  const next = () => page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByLabel("Name or business name").fill("Fatou's donkey cart");
+  await shotOf(page, page.locator("#registration-form"), "12a-step-name");
+  await next();
   await page.getByLabel("WhatsApp number (optional)").fill("7123456");
-  await page.getByLabel("Vehicle or collection method").selectOption({ label: "Donkey cart" });
+  await next();
+  await page.getByRole("radio", { name: "Donkey cart" }).check();
+  await shotOf(page, page.locator("#registration-form"), "12-listing-form");
+  await next();
   await page.getByRole("checkbox", { name: "Brikama", exact: true }).check();
   await page.getByRole("checkbox", { name: "Brikama Nyambai" }).check();
+  await shotOf(page, page.locator("#registration-form"), "12b-step-areas");
+  await next();
   await page.getByRole("checkbox", { name: "Household bags" }).check();
   await page.getByRole("checkbox", { name: "Garden waste" }).check();
-  await page.getByLabel("Service description").fill("Door-to-door pickups every Tuesday and Friday morning.");
+  await next();
   await page.getByRole("checkbox", { name: /Show my phone and WhatsApp numbers/ }).check();
-  await shot(page, "12-listing-form");
+  await page.getByLabel("Anything else residents should know? (optional)").fill("Door-to-door pickups every Tuesday and Friday morning.");
+  await shotOf(page, page.locator("#registration-form"), "12c-step-last");
 
   await page.getByRole("button", { name: "Preview my listing" }).click();
   await shot(page, "13-preview");
@@ -118,11 +131,14 @@ test("guide screenshots", async ({ page, context }) => {
   await expect(page.getByText("Waiting for review")).toBeVisible();
   await shot(page, "14-waiting-for-review");
   await page.getByRole("button", { name: "Sign out" }).click();
+  // Sign-out ends the session on the server first; wait for it before the admin screen.
+  await expect(page.getByText("You're signed out.")).toBeVisible();
 
   // Admins ---------------------------------------------------------------------
   await page.goto("./#/admin");
   await shot(page, "20-admin-signed-out");
-  await page.locator("#admin-content").getByRole("button", { name: "Sign in" }).click();
+  // Admins sign in by email until SMS is on; with SMS, by phone as below.
+  await page.locator("#admin-content").getByRole("button", { name: "Sign in with your phone instead" }).click();
   await signInAs(page, ADMIN_PHONE);
   await expect(page.getByRole("heading", { name: "Review queue (1)" })).toBeVisible();
   // The whole screen is very long; the guide shows its parts one by one.

@@ -12,11 +12,13 @@ SetSetal helps residents of Brikama find someone to collect their waste. Three k
 
 Open **https://setsetal.netlify.app** in Chrome on an Android phone, or scan the QR code on the poster (`docs/pilot/poster.svg`).
 
-To keep it on the phone like any other app, tap **Install app** on the home screen. The button appears a few seconds after the page opens, in Chrome on Android. On an iPhone, use Safari's Share button and choose **Add to Home Screen**.
+To keep it on the phone like any other app, tap **Keep on this phone** on the home screen. The button appears a few seconds after the page opens, in Chrome on Android. On an iPhone, use Safari's Share button and choose **Add to Home Screen**.
 
 Once installed, the app opens without a connection and shows the listings it last saved.
 
-<img src="img/01-home.png" alt="The home screen, with buttons to find a collector, register as a collector and install the app" width="300">
+The home screen has two big picture buttons: **I need a collector** for residents and **I collect waste** for collectors.
+
+<img src="img/01-home.png" alt="The home screen with two picture buttons, I need a collector and I collect waste, and Keep on this phone" width="300">
 
 The four buttons at the bottom are on every screen: **Home**, **Find**, **Join** (for collectors) and **Help**. The phone's own back button goes back one screen at a time.
 
@@ -26,27 +28,29 @@ The four buttons at the bottom are on every screen: **Home**, **Find**, **Join**
 
 ### 1. Find a collector
 
-Tap **Find a collector**, or **Find** at the bottom. Every collector the team has approved is listed.
+Tap **I need a collector**, or **Find** at the bottom. Every collector the team has approved is listed straight away. Each card shows a picture of the vehicle, the areas, pictures of the waste they take and, if the collector agreed, a big **Call** button.
 
 A green **Collecting today** label means the collector has said they are working today. Those are listed first; the rest are in alphabetical order. Nobody can pay to be higher.
 
-<img src="img/02-find.png" alt="The Find screen with three filters and two listings; the first is labelled Collecting today" width="300">
+<img src="img/02-find.png" alt="The Find screen: the area button, a row of vehicle pictures, and two collector cards with Call buttons; the first is labelled Collecting today" width="300">
 
 ### 2. Narrow it down
 
-Choose **Your area**, a **Collection vehicle** or a **Waste type**, then tap **Show matching services**. **Clear filters** shows everything again.
+Tap the green **Your area** button and pick your area from the big tiles. Tap a vehicle picture (donkey cart, tricycle, truck…) to see only those. The list changes as soon as you tap; **All** and **All areas** show everything again.
 
 You pick your area from a list. SetSetal never asks for your address and never uses your phone's location.
 
+<img src="img/03a-choose-area.png" alt="The area tiles under the question Where do you live?, with My area isn't here at the bottom" width="300">
+
 <img src="img/03-find-filtered.png" alt="The Find screen filtered to Brikama Kabafita, showing one listing" width="300">
 
-If your area isn't on the list, choose **Other / not listed**. The app says so plainly, and **Go to Help** lets you tell the team where you are, so they know where collectors are needed.
+If your area isn't on the list, choose **My area isn't here**. The app says so plainly, and **Go to Help** lets you tell the team where you are, so they know where collectors are needed.
 
 <img src="img/04-no-listings-for-area.png" alt="A message saying there are no listings for your area yet, with a button to go to Help" width="300">
 
 ### 3. Contact the collector
 
-Tap **View details** on a listing, then **Call** or **WhatsApp**. WhatsApp opens with a short message already written, which you can change before sending.
+Tap **Call** or the WhatsApp button on the card. To see more first, tap the collector's name or picture. WhatsApp opens with a short message already written, which you can change before sending.
 
 You agree the time and the price with the collector. SetSetal doesn't take part in the call or the payment.
 
@@ -54,26 +58,26 @@ You agree the time and the price with the collector. SetSetal doesn't take part 
 
 Things to know:
 
-- **No Call button?** The collector has not agreed to show their number. The listing says "No contact details yet".
+- **No Call button?** The collector has not agreed to show their number. The card says "No phone number yet". Demonstration listings say "Example only. No phone number."
 - **"Collecting today"** is the collector's own word. SetSetal hasn't checked it, so confirm when you call.
 - **"Saved 12 Nov. Details may have changed."** means you are offline and looking at a saved copy. Phone numbers are removed from saved copies after two days.
 
 ### 4. Report a problem
 
-On the collector's profile, tap **Report a problem with this listing**. To send general feedback instead, tap **Help**.
+On the collector's profile, tap **Report a problem**. To report something that isn't about one collector, tap **Help**.
 
-Choose what it is about, write what happened and tap **Send feedback**.
+Tap the picture of what happened (**They didn't come**, **They came late**, **Wrong number or details**, **Something unsafe**, **Something else**, **The app is hard to use**) and tap **Send**. Writing more is optional.
 
-<img src="img/06-report.png" alt="The feedback form, noting which listing the report is about" width="300">
+<img src="img/06-report.png" alt="The report form: six picture choices, They came late chosen, and an optional box to tell more" width="300">
 
-<img src="img/07-report-sent.png" alt="A message confirming the feedback was sent" width="300">
+<img src="img/07-report-sent.png" alt="A green box with a tick: Sent. Thank you." width="300">
 
 - Reports are anonymous. **Don't put your address or phone number in them**: the team doesn't know who you are and can't reply.
 - With no connection, the app says **"Saved on this phone, not sent yet"** and sends the report by itself when you are back online.
 
 ### 5. Privacy
 
-**Help → Privacy** (also at the foot of every screen) says in plain words what SetSetal knows about you and what it doesn't.
+**Help → Privacy** (also at the foot of every screen) starts with the short version in pictures, then says in plain words what SetSetal knows about you and what it doesn't.
 
 <img src="img/08-privacy.png" alt="The Privacy screen" width="300">
 
@@ -83,7 +87,7 @@ Choose what it is about, write what happened and tap **Send feedback**.
 
 ### 1. Sign in with your phone
 
-Tap **Join**. Enter your phone number (seven digits is enough for a Gambian number) and tap **Send code**.
+Tap **I collect waste** or **Join**. Enter your phone number (seven digits is enough: +220 is already there) and tap **Send code**.
 
 <img src="img/10-sign-in.png" alt="The sign-in form asking for a phone number" width="300">
 
@@ -96,11 +100,20 @@ A 6-digit code arrives by SMS. Enter it and tap **Sign in**. There is no passwor
 
 ### 2. Describe your service
 
-Fill in your name or business name, the number residents should call, your vehicle, the areas you serve and the waste you take. You can choose several areas and several waste types.
+The app asks one question per screen, six in all; **Step 3 of 6** at the top shows how far you are. Tap **Next** to go on and **Back** to change an answer.
 
-The tick-box **"Show my phone and WhatsApp numbers to residents once my listing is approved"** is your choice. Without it, residents see your listing but can't contact you. You can change it at any time.
+1. Your name or business name.
+2. The number residents should call, and your WhatsApp number if you have one.
+3. What you collect with: tap the picture of your vehicle.
+4. Where you collect: tap every area you serve.
+5. What you take: tap every kind of waste.
+6. The box **"Show my phone and WhatsApp numbers to residents once my listing is approved"**, and anything else residents should know.
 
-<img src="img/12-listing-form.png" alt="The listing form filled in, with areas, waste types and the consent box ticked" width="300">
+<img src="img/12-listing-form.png" alt="Step 3 of 6: What do you collect with?, with vehicle pictures and Donkey cart chosen" width="300">
+
+The box in step 6 is your choice. Without it, residents see your listing but can't contact you. You can change it at any time.
+
+<img src="img/12c-step-last.png" alt="Step 6 of 6: the box to show your numbers ticked, and a box for anything else" width="300">
 
 ### 3. Check it and submit
 
@@ -114,13 +127,14 @@ Your listing shows **Waiting for review**. Residents can't see it yet. Come back
 
 <img src="img/14-waiting-for-review.png" alt="The collector's listing with the status Waiting for review" width="300">
 
-When the team has decided, you see one of these:
+When the team has decided, you see one of these. Each has its own colour and picture:
 
-| Status | What it means | What to do |
-|---|---|---|
-| **Approved** | Residents can find you | Nothing |
-| **Not approved** | The team's reason is shown | Tap **Edit my listing**, fix what they mention and submit again |
-| **Suspended** | Hidden from residents; the reason is shown | Contact the SetSetal team. Editing doesn't bring it back |
+| Status | Looks like | What it means | What to do |
+|---|---|---|---|
+| **Waiting for review** | Amber, a clock | The team hasn't decided yet | Wait |
+| **Approved** | Green, a tick | Residents can find you | Nothing |
+| **Not approved** | Red, a warning | The team's reason is shown | Tap **Edit my listing**, fix what they mention and submit again |
+| **Suspended** | Grey, a pause | Hidden from residents; the reason is shown | Contact the SetSetal team. Editing doesn't bring it back |
 
 <img src="img/33-not-approved.png" alt="A listing marked Not approved, with the reason the admin gave" width="300">
 
@@ -148,9 +162,9 @@ The admin screen has no button in the app. Open **https://setsetal.netlify.app/#
 
 ### 1. Sign in
 
-Tap **Sign in** and use your own phone number and SMS code, as a collector would. The app then checks that your account is on the list of admins. An account that isn't sees "This account isn't an admin".
+Enter the email address the project owner added for you, then the code from the email (until SMS codes are switched on). Once SMS works you can tap **Sign in with your phone instead** and use your phone number and SMS code, as a collector would. The app then checks that your account is on the list of admins. An account that isn't sees "This account isn't an admin".
 
-<img src="img/20-admin-signed-out.png" alt="The admin screen asking to sign in first" width="300">
+<img src="img/20-admin-signed-out.png" alt="The admin screen asking for an email address, with Sign in with your phone instead" width="300">
 
 The top of the screen shows what needs attention: listings waiting, open reports and listings that are live. **Refresh**, at the very bottom, loads the latest.
 
@@ -223,7 +237,7 @@ After an approval, residents see the new listing the next time they open the app
 | **"Too many attempts"** | Too many codes were requested | Wait a few minutes |
 | **"That code didn't work"** | Wrong or expired code | Tap **Use a different number** to start again |
 | **"You seem to be offline"** | No connection | Finding collectors still works from the saved copy; signing in and submitting need a connection |
-| **No Install app button** | The app is already installed, or the browser isn't Chrome on Android | Use the browser's menu: **Install app** or **Add to Home screen** |
+| **No "Keep on this phone" button** | The app is already installed, or the browser isn't Chrome on Android | Use the browser's menu: **Install app** or **Add to Home screen** |
 | **"This account isn't an admin"** | The phone number isn't on the admin list | The owner adds it (next section) |
 
 ## Before the first real use

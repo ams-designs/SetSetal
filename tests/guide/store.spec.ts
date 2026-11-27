@@ -25,9 +25,9 @@ test("Play Store screenshots", async ({ page, context }) => {
   await expect(page.locator(".collector-card")).toHaveCount(2);
   await page.locator("#collector-results").evaluate((element) => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 150));
   await shot("2-find");
-  await page.locator(".collector-card", { hasText: "Lamin's tricycle" }).getByRole("button", { name: "View details" }).click();
+  await page.locator(".collector-card", { hasText: "Lamin's tricycle" }).locator(".card-link").click();
   await shot("3-profile");
-  await page.locator(".contact-actions").evaluate((element) => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 330));
+  await page.locator(".contact-profile").evaluate((element) => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 330));
   await shot("4-contact");
   await page.goto("./#/join");
   await shot("5-join");
