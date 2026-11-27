@@ -129,7 +129,7 @@ export function createBackend() {
           areas: areas.filter((area) => area.active).map(({ id, name }) => ({ id, name })),
           vehicle_types: ["municipal-truck", "private-truck", "small-van", "tricycle", "donkey-cart", "horse-cart"],
           waste_types: ["household", "garden", "bulky", "recyclables", "business"],
-          report_types: ["general", "incorrect-listing", "safety", "accessibility"]
+          report_types: ["no-show", "late", "incorrect-listing", "safety", "general", "accessibility"]
         });
       case "public_collectors":
         return json(listings.filter((listing) => listing.status === "approved").map(publicRow)

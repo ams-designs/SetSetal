@@ -5,6 +5,7 @@ import {
 } from "./data/lookups";
 import { backendConfigured, fetchPublicCollectors, type PublicCollectorRow } from "./api";
 import { resetNoResults, trackNoResults } from "./analytics";
+import { icon, vehiclePicture, wastePicture } from "./icons";
 import { $, escapeHTML } from "./ui";
 
 interface Collector {
@@ -85,46 +86,7 @@ export const sampleCollectors: Collector[] = [
   }
 ];
 
-const vehicleSvg: Record<VehicleId, string> = {
-  "municipal-truck": `
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M5 13h24v21H5zM29 20h8l7 8v6H29z"/>
-        <path d="M33 22v6h8M9 18h16M9 23h16"/>
-        <circle cx="14" cy="36" r="4"/><circle cx="36" cy="36" r="4"/>
-      </svg>`,
-  "private-truck": `
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M4 14h26v20H4zM30 21h8l6 7v6H30z"/>
-        <path d="M33 23v5h8"/>
-        <circle cx="13" cy="36" r="4"/><circle cx="37" cy="36" r="4"/>
-      </svg>`,
-  "small-van": `
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <path d="m6 28 4-10a4 4 0 0 1 4-3h19a4 4 0 0 1 4 3l5 10v7H6z"/>
-        <path d="m13 18-3 9h28l-5-9z"/>
-        <circle cx="14" cy="35" r="4"/><circle cx="35" cy="35" r="4"/>
-      </svg>`,
-  "tricycle": `
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="10" cy="35" r="5"/><circle cx="37" cy="35" r="5"/>
-        <path d="M10 35h17l-5-13h-8l-4 13M22 22h12l3 13M21 18h7M27 18l4-5"/>
-        <path d="M18 17h8"/>
-      </svg>`,
-  "donkey-cart": `
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="14" cy="35" r="6"/><circle cx="35" cy="35" r="6"/>
-        <path d="M8 26h28l-2-10H13zM11 26v4M37 26l5 6"/>
-        <path d="M17 16v-5h13v5M20 11V7h7v4"/>
-      </svg>`,
-  "horse-cart": `
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="13" cy="35" r="6"/><circle cx="36" cy="35" r="6"/>
-        <path d="M7 25h28l-2-9H13zM10 25v5M36 25l6 7"/>
-        <path d="M18 15V9h12v6"/>
-      </svg>`
-};
-
-export const iconFor = (vehicle: VehicleId): string => vehicleSvg[vehicle];
+export const iconFor = (vehicle: VehicleId): string => vehiclePicture(vehicle);
 
 const E164 = /^\+[1-9][0-9]{6,14}$/;
 const CACHE_KEY = "setsetal.listings.v2";
@@ -260,7 +222,6 @@ const areaName = (listing: Listing, id: string): string =>
   (listing.demo ? DEMO_AREAS.find((area) => area.id === id)?.name : undefined) ?? areaLabel(id);
 const areaList = (listing: Listing): string => listing.areas.map((id) => areaName(listing, id)).join(", ");
 
-const wasteList = (waste: readonly WasteId[]): string => waste.map(wasteLabel).join(", ");
 
 const optionsHTML = (items: { value: string; label: string }[]): string =>
   items.map(({ value, label }) =>
@@ -290,39 +251,76 @@ function areaChoices(): Area[] {
 export const vehicleOptions = () => vehicles().map((id) => ({ value: id, label: vehicleLabel(id) }));
 export const wasteOptions = () => wasteTypes().map((id) => ({ value: id, label: wasteLabel(id) }));
 
-interface Filters {
-  area: string;
-  vehicle: string;
-  waste: string;
+// What the resident has chosen on Find. Picking is a tap on a tile, and the
+// list changes straight away: there is no form to fill in first. There is no
+// waste-type filter (decided 26 Nov 2026); each card shows what it takes.
+const filters = { area: "all", vehicle: "all" };
+
+function matches(listing: Listing): boolean {
+  return (filters.area === "all" || listing.areas.includes(filters.area)) &&
+    (filters.vehicle === "all" || listing.vehicle === filters.vehicle);
 }
 
-function matchesFilters(listing: Listing, filters: Filters): boolean {
-  return (filters.area === "all" || listing.areas.includes(filters.area)) &&
-    (filters.vehicle === "all" || listing.vehicle === filters.vehicle) &&
-    (filters.waste === "all" || (listing.waste as string[]).includes(filters.waste));
-}
+const chosenAreaName = (id: string): string =>
+  id === "all" ? t("find.areaAll") : id === OTHER_AREA ? t("find.areaOther") :
+    areaChoices().find((area) => area.id === id)?.name ?? areaLabel(id);
 
 const demoLabel = (listing: Listing): string =>
   listing.demo ? `<span class="demo-label">${escapeHTML(t("listing.demoLabel"))}</span>` : "";
 // The collector's own word that they are working today; SetSetal hasn't
 // checked it, and the label says so on the profile.
 const todayLabel = (listing: Listing): string =>
-  listing.availableToday ? `<span class="today-label">${escapeHTML(t("listing.availableToday"))}</span>` : "";
+  listing.availableToday
+    ? `<span class="today-label">${icon("sun")}${escapeHTML(t("listing.availableToday"))}</span>`
+    : "";
+
+const wastePictures = (waste: readonly WasteId[]): string => `
+          <ul class="waste-list" aria-label="${escapeHTML(t("listing.takes"))}">${waste.map((id) => `
+            <li>${wastePicture(id)}<span>${escapeHTML(wasteLabel(id))}</span></li>`).join("")}
+          </ul>`;
+
+// wa.me takes the number without the leading +. The message is only a
+// suggestion the resident can change before sending.
+const whatsappHref = (number: string): string =>
+  `https://wa.me/${escapeHTML(number.slice(1))}?text=${escapeHTML(encodeURIComponent(t("profile.whatsappText")))}`;
+
+// Call and WhatsApp sit on the card itself, under the same rule as the
+// profile: only for an approved listing whose collector agreed (product rule
+// 2). The server leaves the numbers out otherwise.
+function contactButtons(listing: Listing, where: "card" | "profile"): string {
+  if (listing.demo || (!listing.phone && !listing.whatsapp)) {
+    const key = listing.demo ? "listing.demoNoContact" : "listing.noContact";
+    return `
+          <p class="no-contact">${icon("noPhone")}<span>${escapeHTML(t(key))}</span></p>`;
+  }
+  const name = nameOf(listing);
+  const id = escapeHTML(listing.id);
+  const onlyWhatsapp = !listing.phone;
+  const call = listing.phone ? `
+            <a class="button primary call-button" href="tel:${escapeHTML(listing.phone)}" data-contact="call" data-id="${id}"
+              aria-label="${escapeHTML(t("profile.callLabel", { name }))}">${icon("phone")}<span>${escapeHTML(t("profile.call"))}</span></a>` : "";
+  const whatsapp = listing.whatsapp ? `
+            <a class="button secondary whatsapp-button${onlyWhatsapp || where === "profile" ? "" : " icon-only"}" href="${whatsappHref(listing.whatsapp)}"
+              target="_blank" rel="noopener" data-contact="whatsapp" data-id="${id}"
+              aria-label="${escapeHTML(t("profile.whatsappLabel", { name }))}">${icon("message")}<span>${escapeHTML(t("profile.whatsapp"))}</span></a>` : "";
+  return `
+          <div class="contact-buttons contact-${where}">${call}${whatsapp}
+          </div>`;
+}
 
 function collectorCard(listing: Listing): string {
+  const name = nameOf(listing);
   return `
       <article class="collector-card">
-        <div class="vehicle-art">${iconFor(listing.vehicle)}</div>
-        <div>
-          <h3>${escapeHTML(nameOf(listing))}</h3>
-          <p>${escapeHTML(vehicleLabel(listing.vehicle))} · ${escapeHTML(areaList(listing))}</p>
-          <p>${escapeHTML(t("listing.wasteTypes", { types: wasteList(listing.waste) }))}</p>
-          ${demoLabel(listing)}${todayLabel(listing)}
-          <div class="card-actions">
-            <button class="button secondary" type="button"
-              data-profile="${escapeHTML(listing.id)}">${escapeHTML(t("listing.viewDetails"))}</button>
+        <div class="card-head">
+          <div class="card-picture">${iconFor(listing.vehicle)}</div>
+          <div class="card-info">
+            <h3><button class="card-link" type="button" data-profile="${escapeHTML(listing.id)}">${escapeHTML(name)}</button></h3>
+            <p class="card-area">${icon("pin")}<span>${escapeHTML(areaList(listing))}</span></p>
+            ${todayLabel(listing)}${demoLabel(listing)}
           </div>
-        </div>
+          ${icon("chevron", "icon card-chevron")}
+        </div>${wastePictures(listing.waste)}${contactButtons(listing, "card")}
       </article>`;
 }
 
@@ -331,45 +329,71 @@ function emptyState(otherArea: boolean, demo: boolean): string {
     return `<div class="empty-state">
           <h3>${escapeHTML(t("find.empty.otherArea.title"))}</h3>
           <p>${escapeHTML(t("find.empty.otherArea.body"))}</p>
-          <button class="button secondary" type="button" data-go="help">${escapeHTML(t("find.empty.otherArea.cta"))}</button>
+          <button class="button primary" type="button" data-go="help">${escapeHTML(t("find.empty.otherArea.cta"))}</button>
         </div>`;
   }
   return `<div class="empty-state">
           <h3>${escapeHTML(t(demo ? "find.empty.title" : "find.empty.titleReal"))}</h3>
           <p>${escapeHTML(t("find.empty.body"))}</p>
+          <button class="button secondary" type="button" data-show-all>${escapeHTML(t("find.showAll"))}</button>
         </div>`;
 }
 
-// Runs at start-up and again whenever the lists or the listings change.
+const tile = (value: string, label: string, chosen: boolean, extraClass = ""): string => `
+          <button class="area-tile${extraClass}" type="button" data-area="${escapeHTML(value)}" aria-pressed="${chosen}">
+            ${chosen ? icon("check") : ""}<span>${escapeHTML(label)}</span>
+          </button>`;
+
+// Runs at start-up and again whenever the lists or the listings change. A
+// choice that is no longer offered goes back to "all".
 export function populateFilters(): void {
-  fillSelect($<HTMLSelectElement>("#area"), [
-    ...areaChoices().map((area) => ({ value: area.id, label: area.name })),
-    { value: OTHER_AREA, label: areaLabel(OTHER_AREA) }
-  ]);
-  fillSelect($<HTMLSelectElement>("#vehicle-filter"), vehicleOptions());
-  fillSelect($<HTMLSelectElement>("#waste-type"), wasteOptions());
+  const choices = areaChoices();
+  if (filters.area !== "all" && filters.area !== OTHER_AREA && !choices.some((area) => area.id === filters.area)) {
+    filters.area = "all";
+  }
+  if (filters.vehicle !== "all" && !vehicles().includes(filters.vehicle as VehicleId)) filters.vehicle = "all";
+
+  $("#area-current").textContent = chosenAreaName(filters.area);
+  $("#area-tiles").innerHTML = [
+    tile("all", t("find.areaAll"), filters.area === "all"),
+    ...choices.map((area) => tile(area.id, area.name, filters.area === area.id)),
+    tile(OTHER_AREA, t("find.areaOther"), filters.area === OTHER_AREA, " area-tile-other")
+  ].join("");
+
+  $("#vehicle-chips").innerHTML = [
+    { value: "all", label: t("find.vehicleAll"), picture: icon("all", "picture all-picture") },
+    ...vehicles().map((id) => ({ value: id, label: vehicleLabel(id), picture: vehiclePicture(id) }))
+  ].map(({ value, label, picture }) => `
+        <button class="vehicle-chip" type="button" data-vehicle="${escapeHTML(value)}" aria-pressed="${filters.vehicle === value}">
+          ${picture}<span>${escapeHTML(label)}</span>
+        </button>`).join("");
 }
 
 export function clearFilters(): void {
-  $<HTMLSelectElement>("#area").value = "all";
-  $<HTMLSelectElement>("#vehicle-filter").value = "all";
-  $<HTMLSelectElement>("#waste-type").value = "all";
+  filters.area = "all";
+  filters.vehicle = "all";
+  populateFilters();
 }
 
-// "searched" is true when the resident pressed the search button, so a search
-// that finds nothing is counted once and not on every redraw.
+export function setAreaFilter(id: string): void {
+  filters.area = id;
+  populateFilters();
+}
+
+export function setVehicleFilter(id: string): void {
+  filters.vehicle = id;
+  populateFilters();
+}
+
+// "searched" is true when the resident changed a choice, so a search that
+// finds nothing is counted once and not on every redraw.
 export function renderCollectors(options: { searched?: boolean } = {}): void {
-  const filters: Filters = {
-    area: $<HTMLSelectElement>("#area").value,
-    vehicle: $<HTMLSelectElement>("#vehicle-filter").value,
-    waste: $<HTMLSelectElement>("#waste-type").value
-  };
   if (pending) {
     $("#results-count").textContent = t("find.loading");
     $("#collector-results").innerHTML = "";
     return;
   }
-  const results = listings.filter((listing) => matchesFilters(listing, filters));
+  const results = filters.area === OTHER_AREA ? [] : listings.filter(matches);
   const demo = listings.some((listing) => listing.demo);
 
   const count = plural(demo ? "find.count" : "find.countReal", results.length);
@@ -381,14 +405,13 @@ export function renderCollectors(options: { searched?: boolean } = {}): void {
   // search that finds something starts the count afresh, so the same empty
   // search tried again later is counted again.
   if (options.searched && !demo) {
-    if (results.length === 0) trackNoResults(filters);
+    if (results.length === 0) trackNoResults({ ...filters, waste: "all" });
     else resetNoResults();
   }
 }
 
 const savedNote = (): string => t("listing.savedNote", { date: formatDate(savedAt ?? Date.now()) });
 
-// wa.me takes the number without the leading +.
 function contactSection(listing: Listing): string {
   if (listing.demo) {
     return `
@@ -404,19 +427,7 @@ function contactSection(listing: Listing): string {
           <p>${escapeHTML(t("profile.noContactReal.body"))}</p>
         </div>`;
   }
-  const name = nameOf(listing);
-  const call = listing.phone ? `
-          <a class="button primary" href="tel:${escapeHTML(listing.phone)}" data-contact="call" data-id="${escapeHTML(listing.id)}"
-            aria-label="${escapeHTML(t("profile.callLabel", { name }))}">${escapeHTML(t("profile.call"))}</a>` : "";
-  // The message is only a suggestion the resident can change before sending.
-  const text = encodeURIComponent(t("profile.whatsappText"));
-  const whatsapp = listing.whatsapp ? `
-          <a class="button secondary" href="https://wa.me/${escapeHTML(listing.whatsapp.slice(1))}?text=${escapeHTML(text)}"
-            target="_blank" rel="noopener" data-contact="whatsapp" data-id="${escapeHTML(listing.id)}"
-            aria-label="${escapeHTML(t("profile.whatsappLabel", { name }))}">${escapeHTML(t("profile.whatsapp"))}</a>` : "";
-  return `
-        <div class="card-actions contact-actions">${call}${whatsapp}
-        </div>
+  return `${contactButtons(listing, "profile")}
         <p class="small-note">${escapeHTML(t("profile.contactNote"))}</p>`;
 }
 
@@ -432,30 +443,19 @@ export function renderProfile(id: string | null): void {
     return;
   }
 
-  const row = (label: string, value: string) => `
-        <div class="detail-row">
-          <strong>${escapeHTML(label)}</strong>
-          <p>${escapeHTML(value)}</p>
-        </div>`;
-
+  const about = descriptionOf(collector);
   $("#profile-content").innerHTML = `
       <article class="panel profile-card">
-        <div class="profile-title-row">
-          <div class="vehicle-art">${iconFor(collector.vehicle)}</div>
-          <div>
-            <h2>${escapeHTML(nameOf(collector))}</h2>
-            ${demoLabel(collector)}${todayLabel(collector)}
-          </div>
-        </div>${
-          (collector.availableToday ? `
-        <p class="small-note">${escapeHTML(t("profile.availableNote"))}</p>` : "") +
-          row(t("profile.vehicle"), vehicleLabel(collector.vehicle)) +
-          row(t("profile.area"), areaList(collector)) +
-          row(t("profile.waste"), wasteList(collector.waste)) +
-          (descriptionOf(collector) ? row(t("profile.about"), descriptionOf(collector)) : "")}${
+        <div class="profile-picture">${vehiclePicture(collector.vehicle)}<span>${escapeHTML(vehicleLabel(collector.vehicle))}</span></div>
+        <h2>${escapeHTML(nameOf(collector))}</h2>
+        <div class="profile-labels">${todayLabel(collector)}${demoLabel(collector)}</div>${
+          collector.availableToday ? `
+        <p class="small-note">${escapeHTML(t("profile.availableNote"))}</p>` : ""}
+        <p class="card-area profile-area">${icon("pin")}<span>${escapeHTML(areaList(collector))}</span></p>
+        ${wastePictures(collector.waste)}${about ? `
+        <div class="detail-row profile-about"><strong>${escapeHTML(t("profile.about"))}</strong><p>${escapeHTML(about)}</p></div>` : ""}${
           contactSection(collector)}${savedLine(collector)}
       </article>${collector.demo ? "" : `
-      <button class="button secondary full-width" type="button"
-        data-report="${escapeHTML(collector.id)}">${escapeHTML(t("profile.report"))}</button>`}
-      <button class="button secondary full-width" data-go="find">${escapeHTML(t("profile.allListings"))}</button>`;
+      <button class="button secondary full-width report-button" type="button"
+        data-report="${escapeHTML(collector.id)}">${icon("flag")}<span>${escapeHTML(t("profile.report"))}</span></button>`}`;
 }

@@ -11,7 +11,7 @@ test("after the first load the app works offline", async ({ page, context }) => 
 
   await context.setOffline(true);
   await page.reload();
-  await expectScreen(page, "Find the right waste collector near you.");
+  await expectScreen(page, "Find someone to take your rubbish away.");
 
   for (const [name, heading] of [["Find", "Find a collector"], ["Join", "Register your service"], ["Help", "Help and feedback"]]) {
     await nav(page).getByRole("button", { name }).click();

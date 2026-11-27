@@ -8,7 +8,7 @@ import { bindJoin, hasDraft, leaveJoin, populateJoin, renderJoin, renderPreview 
 import { bindInstall } from "./install";
 import {
   clearFilters, findCollector, listingsPending, loadListings, nameOf, populateFilters, renderCollectors, renderProfile,
-  showingDemos
+  setAreaFilter, setVehicleFilter, showingDemos
 } from "./listings";
 import { back, currentRoute, go, isScreen, redirect, startRouter, type Route } from "./router";
 import { startOutbox } from "./reports";
@@ -101,19 +101,42 @@ function bindNavigation(): void {
     if (target.closest("[data-back]")) back();
   });
 
-  $("#help-button").addEventListener("click", () => {
-    setReportTarget(null);
-    go("help");
-  });
+  bindFind();
+}
 
-  $("#search-form").addEventListener("submit", (event) => {
-    event.preventDefault();
+// Find: the area button opens the tiles in place (no pop-up to dismiss), and
+// every tap on an area or vehicle changes the list straight away.
+function bindFind(): void {
+  const areaButton = $<HTMLButtonElement>("#area-button");
+  const setOpen = (open: boolean) => {
+    areaButton.setAttribute("aria-expanded", String(open));
+    $("#area-options").hidden = !open;
+  };
+  areaButton.addEventListener("click", () => {
+    const open = areaButton.getAttribute("aria-expanded") !== "true";
+    setOpen(open);
+    if (open) $<HTMLButtonElement>("#area-tiles [aria-pressed='true']")?.focus();
+  });
+  $("#area-tiles").addEventListener("click", (event) => {
+    const tile = (event.target as Element).closest<HTMLElement>("[data-area]");
+    if (!tile) return;
+    setAreaFilter(tile.dataset.area ?? "all");
+    setOpen(false);
+    areaButton.focus();
     renderCollectors({ searched: true });
   });
-
-  $("#clear-filters").addEventListener("click", () => {
+  $("#vehicle-chips").addEventListener("click", (event) => {
+    const chip = (event.target as Element).closest<HTMLElement>("[data-vehicle]");
+    if (!chip) return;
+    setVehicleFilter(chip.dataset.vehicle ?? "all");
+    $<HTMLButtonElement>(`#vehicle-chips [data-vehicle="${CSS.escape(chip.dataset.vehicle ?? "all")}"]`)?.focus();
+    renderCollectors({ searched: true });
+  });
+  $("#collector-results").addEventListener("click", (event) => {
+    if (!(event.target as Element).closest("[data-show-all]")) return;
     clearFilters();
     renderCollectors();
+    areaButton.focus();
   });
 }
 

@@ -9,7 +9,7 @@ test("a cold load of #/collector/<id> opens that profile", async ({ page }) => {
 test("back from a deep link goes home, not out of the app", async ({ page }) => {
   await page.goto("./#/collector/demo-horse");
   await page.locator(".screen.active").getByRole("button", { name: "Go back" }).click();
-  await expectScreen(page, "Find the right waste collector near you.", "#/");
+  await expectScreen(page, "Find someone to take your rubbish away.", "#/");
 });
 
 test("every screen has its own URL", async ({ page }) => {
@@ -37,8 +37,8 @@ test("the preview without a draft falls back to the form", async ({ page }) => {
 
 test("reload keeps the screen and back still works", async ({ page }) => {
   await page.goto("./");
-  await page.getByRole("button", { name: "Find a collector" }).click();
-  await page.getByRole("button", { name: "View details" }).first().click();
+  await page.getByRole("button", { name: "I need a collector" }).click();
+  await page.locator(".card-link").first().click();
   await page.reload();
   await expectScreen(page, "Collector profile", "#/collector/demo-municipal");
   await page.locator(".screen.active").getByRole("button", { name: "Go back" }).click();

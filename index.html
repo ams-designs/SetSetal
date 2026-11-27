@@ -28,101 +28,62 @@
       </span>
       <span>SetSetal</span>
     </a>
-    <button class="icon-button" id="help-button" type="button" data-i18n-aria-label="app.openHelp">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M9.7 9a2.4 2.4 0 1 1 4.3 1.5c-1.2 1.1-2 1.4-2 3"/>
-        <path d="M12 17h.01"/>
-      </svg>
-    </button>
   </header>
 
   <main id="main" class="app-main">
     <section class="screen active" id="home" aria-labelledby="home-title">
-      <div class="hero">
-        <p class="eyebrow" data-i18n="home.eyebrow"></p>
-        <h1 id="home-title" data-i18n="home.title"></h1>
-        <p class="intro" data-i18n="home.intro"></p>
-        <div class="hero-art" aria-hidden="true">
-          <svg viewBox="0 0 340 150">
-            <path d="M0 125 Q80 95 155 123 T340 116 V150 H0Z" fill="#DDECE1"/>
-            <path d="M24 113V59h42v54M17 59h56L45 35Z" fill="#E8B84A"/>
-            <path d="M32 72h9v13h-9zM50 72h9v13h-9z" fill="#FAF8F1"/>
-            <path d="M96 112V45h5V25h5v20h5v67" fill="#147D59"/>
-            <circle cx="103" cy="25" r="20" fill="#A7CBB3"/>
-            <path d="M151 111h120a8 8 0 0 0 8-8V72a8 8 0 0 0-8-8h-34l-20-20h-26l-12 20h-28a8 8 0 0 0-8 8v31a8 8 0 0 0 8 8Z" fill="#147D59"/>
-            <path d="M223 49h-25l-9 15h49Z" fill="#FAF8F1"/>
-            <rect x="158" y="75" width="29" height="18" rx="2" fill="#FAF8F1"/>
-            <circle cx="183" cy="111" r="13" fill="#28302D"/>
-            <circle cx="183" cy="111" r="5" fill="#FAF8F1"/>
-            <circle cx="253" cy="111" r="13" fill="#28302D"/>
-            <circle cx="253" cy="111" r="5" fill="#FAF8F1"/>
-            <path d="m289 91 9-13 9 13M298 78v28" stroke="#C46A43" stroke-width="4" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="hero-actions">
-          <button class="button primary" data-go="find" data-i18n="home.findCta"></button>
-          <button class="button secondary" data-go="join" data-i18n="home.joinCta"></button>
-          <button id="install-button" class="button secondary" type="button" hidden data-i18n="install.button"></button>
-        </div>
+      <h1 id="home-title" class="home-title" data-i18n="home.title"></h1>
+      <div class="doors">
+        <button class="door door-need" type="button" data-go="find">
+          <span class="door-picture" aria-hidden="true">
+            <svg viewBox="0 0 48 48" focusable="false">
+              <path d="M5 22 24 7l19 15v21H5z" fill="#E8B84A" stroke="#174B3A" stroke-width="2.2" stroke-linejoin="round"/>
+              <path d="M19 43V30h9v13" fill="#FFFFFF" stroke="#174B3A" stroke-width="2.2" stroke-linejoin="round"/>
+              <path d="M31 31h9l2 12H29z" fill="#28302D" stroke="#174B3A" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M33 31c0-3 1.3-5 2.5-5s2.5 2 2.5 5" fill="none" stroke="#174B3A" stroke-width="2"/>
+            </svg>
+          </span>
+          <span class="door-text"><strong data-i18n="home.findCta"></strong><span data-i18n="home.findHint"></span></span>
+        </button>
+        <button class="door door-give" type="button" data-go="join">
+          <span class="door-picture" aria-hidden="true">
+            <svg viewBox="0 0 64 48" focusable="false">
+              <path d="M2 23h32v10H2z" fill="#E8B84A" stroke="#174B3A" stroke-width="2.6" stroke-linejoin="round"/>
+              <path d="M34 28h6" stroke="#174B3A" stroke-width="2.6" stroke-linecap="round"/>
+              <path d="M40 24h11l3-9 2-9 2 8 3 1-1 5h-4l-3 7v14M44 24v16" fill="#9A9087" stroke="#174B3A" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+              <path d="M55 7l-1-5M58 8l1-5" stroke="#174B3A" stroke-width="2.6" stroke-linecap="round"/>
+              <circle cx="13" cy="38" r="6" fill="#FFFFFF" stroke="#174B3A" stroke-width="2.6"/><circle cx="13" cy="38" r="1.6" fill="#174B3A"/>
+            </svg>
+          </span>
+          <span class="door-text"><strong data-i18n="home.joinCta"></strong><span data-i18n="home.joinHint"></span></span>
+        </button>
       </div>
-
-      <div class="trust-strip">
-        <span class="trust-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6Z"/><path d="m8 12 2.5 2.5L16 9"/></svg>
-        </span>
-        <div>
-          <strong data-i18n="home.trust.title"></strong>
-          <p data-i18n="home.trust.body"></p>
-        </div>
-      </div>
-
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow" data-i18n="home.steps.eyebrow"></p>
-          <h2 data-i18n="home.steps.title"></h2>
-        </div>
-      </div>
-      <div class="steps-grid">
-        <article class="step-card"><span>01</span><h3 data-i18n="home.steps.1.title"></h3><p data-i18n="home.steps.1.body"></p></article>
-        <article class="step-card"><span>02</span><h3 data-i18n="home.steps.2.title"></h3><p data-i18n="home.steps.2.body"></p></article>
-        <article class="step-card"><span>03</span><h3 data-i18n="home.steps.3.title"></h3><p data-i18n="home.steps.3.body"></p></article>
-      </div>
+      <button id="install-button" class="button secondary install-button" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 7v7m-3-3 3 3 3-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="install.button"></span>
+      </button>
     </section>
 
     <section class="screen" id="find" aria-labelledby="find-title" hidden>
-      <div class="page-heading">
-        <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      <div class="page-heading"><h1 id="find-title" data-i18n="find.title"></h1></div>
+
+      <div class="area-picker">
+        <button id="area-button" class="area-button" type="button" aria-expanded="false" aria-controls="area-options">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="currentColor"/><circle cx="12" cy="10" r="2.6" fill="#147D59"/></svg>
+          <span class="area-button-text"><span class="area-button-label" data-i18n="find.area"></span><strong id="area-current"></strong></span>
+          <span class="area-change" data-i18n="find.changeArea"></span>
         </button>
-        <div><p class="eyebrow" data-i18n="find.eyebrow"></p><h1 id="find-title" data-i18n="find.title"></h1></div>
+        <div id="area-options" class="area-options" hidden>
+          <h2 id="area-options-title" class="area-options-title" data-i18n="find.areaQuestion"></h2>
+          <div id="area-tiles" class="area-tiles" role="group" aria-labelledby="area-options-title"></div>
+          <p class="small-note" data-i18n="find.locationNote"></p>
+        </div>
       </div>
 
-      <form id="search-form" class="panel filter-panel">
-        <label for="area" data-i18n="find.area"></label>
-        <select id="area" name="area">
-          <option value="all" data-i18n="find.areaAll"></option>
-        </select>
+      <div id="vehicle-chips" class="vehicle-chips" role="group" data-i18n-aria-label="find.vehicle"></div>
 
-        <label for="vehicle-filter" data-i18n="find.vehicle"></label>
-        <select id="vehicle-filter" name="vehicle">
-          <option value="all" data-i18n="find.vehicleAll"></option>
-        </select>
-
-        <label for="waste-type" data-i18n="find.waste"></label>
-        <select id="waste-type" name="waste">
-          <option value="all" data-i18n="find.wasteAll"></option>
-        </select>
-
-        <button class="button primary" type="submit" data-i18n="find.submit"></button>
-        <p class="small-note" data-i18n="find.locationNote"></p>
-      </form>
-
-      <div class="section-heading results-heading">
-        <div><h2 data-i18n="find.resultsTitle"></h2><p id="results-count" class="muted" aria-live="polite"></p></div>
-        <button id="clear-filters" class="text-button" type="button" data-i18n="find.clear"></button>
-      </div>
-      <div id="collector-results" class="collector-list" aria-live="polite"></div>
+      <p id="results-count" class="results-count" aria-live="polite"></p>
+      <div id="collector-results" class="collector-list"></div>
     </section>
 
     <section class="screen" id="profile" aria-labelledby="profile-title" hidden>
@@ -130,7 +91,7 @@
         <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow" data-i18n="profile.eyebrow"></p><h1 id="profile-title" data-i18n="profile.title"></h1></div>
+        <h1 id="profile-title" data-i18n="profile.title"></h1>
       </div>
       <div id="profile-content"></div>
     </section>
@@ -140,9 +101,9 @@
         <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow" data-i18n="join.eyebrow"></p><h1 id="join-title" data-i18n="join.title"></h1></div>
+        <h1 id="join-title" data-i18n="join.title"></h1>
       </div>
-      <p class="intro" data-i18n="join.intro"></p>
+      <p id="join-intro" class="intro" data-i18n="join.intro"></p>
 
       <p id="join-loading" class="muted" hidden data-i18n="join.loading"></p>
 
@@ -152,7 +113,10 @@
           <p id="signin-admin-note" class="notice" hidden data-i18n="join.signin.adminNote"></p>
           <p data-i18n="join.signin.body"></p>
           <label for="signin-phone" data-i18n="join.signin.phone"></label>
-          <input id="signin-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" data-i18n-placeholder="join.signin.phonePlaceholder">
+          <div class="phone-input">
+            <span class="phone-prefix" aria-hidden="true">+220</span>
+            <input id="signin-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="20" data-i18n-placeholder="join.signin.phonePlaceholder">
+          </div>
           <div id="signin-captcha"></div>
           <button id="signin-send" class="button primary" type="submit" data-i18n="join.signin.send"></button>
           <p class="small-note" data-i18n="join.signin.sharedNote"></p>
@@ -161,7 +125,7 @@
           <h2 data-i18n="join.signin.codeTitle"></h2>
           <p id="signin-code-sent"></p>
           <label for="signin-code" data-i18n="join.signin.code"></label>
-          <input id="signin-code" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6">
+          <input id="signin-code" class="code-input" name="code" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6">
           <button id="signin-verify" class="button primary" type="submit" data-i18n="join.signin.verify"></button>
           <button id="signin-change" class="text-button" type="button" data-i18n="join.signin.change"></button>
         </form>
@@ -170,47 +134,66 @@
 
       <div id="my-listing" hidden></div>
 
-      <form id="registration-form" class="panel form-panel" hidden>
-        <label for="provider-name"><span data-i18n="join.name"></span> <span class="required">*</span></label>
-        <input id="provider-name" name="name" autocomplete="organization" required minlength="2" maxlength="80" data-i18n-placeholder="join.namePlaceholder">
+      <form id="registration-form" class="panel form-panel join-form" novalidate hidden>
+        <div class="step-progress">
+          <p id="step-count" class="step-count" aria-live="polite"></p>
+          <div class="step-bar" aria-hidden="true"><span id="step-bar-fill"></span></div>
+        </div>
 
-        <label for="provider-phone"><span data-i18n="join.phone"></span> <span class="required">*</span></label>
-        <input id="provider-phone" name="phone" type="tel" autocomplete="tel" required maxlength="25" data-i18n-placeholder="join.phonePlaceholder">
+        <fieldset class="join-step" data-step="name">
+          <legend><h2 tabindex="-1" data-i18n="join.step.name"></h2></legend>
+          <label for="provider-name" data-i18n="join.name"></label>
+          <input id="provider-name" name="name" autocomplete="organization" required minlength="2" maxlength="80" data-i18n-placeholder="join.namePlaceholder">
+        </fieldset>
 
-        <label for="provider-whatsapp" data-i18n="join.whatsapp"></label>
-        <input id="provider-whatsapp" name="whatsapp" type="tel" maxlength="25" data-i18n-placeholder="join.whatsappPlaceholder">
+        <fieldset class="join-step" data-step="phone" hidden>
+          <legend><h2 tabindex="-1" data-i18n="join.step.phone"></h2></legend>
+          <label for="provider-phone" data-i18n="join.phone"></label>
+          <input id="provider-phone" name="phone" type="tel" autocomplete="tel" required maxlength="25" data-i18n-placeholder="join.phonePlaceholder">
+          <label for="provider-whatsapp" data-i18n="join.whatsapp"></label>
+          <input id="provider-whatsapp" name="whatsapp" type="tel" maxlength="25" data-i18n-placeholder="join.whatsappPlaceholder">
+        </fieldset>
 
-        <label for="provider-vehicle"><span data-i18n="join.vehicle"></span> <span class="required">*</span></label>
-        <select id="provider-vehicle" name="vehicle" required>
-          <option value="" data-i18n="join.vehicleChoose"></option>
-        </select>
+        <fieldset class="join-step" data-step="vehicle" hidden>
+          <legend><h2 tabindex="-1" data-i18n="join.step.vehicle"></h2></legend>
+          <div id="provider-vehicle-options" class="pick-tiles vehicle-tiles" role="radiogroup" data-i18n-aria-label="join.vehicle"></div>
+        </fieldset>
 
-        <fieldset id="provider-areas" class="checkbox-group">
-          <legend><span data-i18n="join.areas.legend"></span> <span class="required">*</span></legend>
-          <div id="provider-area-options"></div>
+        <fieldset id="provider-areas" class="join-step" data-step="areas" hidden>
+          <legend><h2 tabindex="-1" data-i18n="join.step.areas"></h2></legend>
+          <p class="small-note" data-i18n="join.manyAllowed"></p>
           <p id="provider-areas-error" class="field-error" role="alert" hidden data-i18n="join.areas.error"></p>
+          <div id="provider-area-options" class="pick-tiles"></div>
         </fieldset>
 
-        <fieldset id="provider-waste" class="checkbox-group">
-          <legend><span data-i18n="join.waste.legend"></span> <span class="required">*</span></legend>
-          <div id="provider-waste-options"></div>
+        <fieldset id="provider-waste" class="join-step" data-step="waste" hidden>
+          <legend><h2 tabindex="-1" data-i18n="join.step.waste"></h2></legend>
+          <p class="small-note" data-i18n="join.manyAllowed"></p>
           <p id="provider-waste-error" class="field-error" role="alert" hidden data-i18n="join.waste.error"></p>
+          <div id="provider-waste-options" class="pick-tiles"></div>
         </fieldset>
 
-        <label for="provider-description" data-i18n="join.description"></label>
-        <textarea id="provider-description" name="description" rows="3" maxlength="500" data-i18n-placeholder="join.descriptionPlaceholder"></textarea>
+        <fieldset class="join-step" data-step="finish" hidden>
+          <legend><h2 tabindex="-1" data-i18n="join.step.finish"></h2></legend>
+          <label class="consent-tile">
+            <input id="provider-consent" type="checkbox" name="consent">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z" fill="currentColor"/></svg>
+            <span data-i18n="join.consent"></span>
+          </label>
+          <p class="small-note" data-i18n="join.consentNote"></p>
+          <label for="provider-description" data-i18n="join.description"></label>
+          <textarea id="provider-description" name="description" rows="3" maxlength="500" data-i18n-placeholder="join.descriptionPlaceholder"></textarea>
+          <p class="small-note" data-i18n="join.reviewNote"></p>
+          <p class="small-note"><a href="#/privacy" data-go="privacy" data-i18n="privacy.link"></a></p>
+        </fieldset>
 
-        <label class="checkbox-row">
-          <input id="provider-consent" type="checkbox" name="consent">
-          <span data-i18n="join.consent"></span>
-        </label>
-        <p class="small-note" data-i18n="join.consentNote"></p>
-        <p class="small-note"><a href="#/privacy" data-go="privacy" data-i18n="privacy.link"></a></p>
-
-        <button class="button primary" type="submit" data-i18n="join.submit"></button>
-        <p class="small-note" data-i18n="join.reviewNote"></p>
+        <div id="registration-feedback" class="field-error step-error" role="alert" hidden></div>
+        <div class="step-buttons">
+          <button id="step-back" class="button secondary" type="button" data-i18n="join.stepBack"></button>
+          <button id="step-next" class="button primary" type="button" data-i18n="join.next"></button>
+          <button id="step-submit" class="button primary" type="submit" data-i18n="join.submit" hidden></button>
+        </div>
       </form>
-      <div id="registration-feedback" class="feedback" role="status" hidden></div>
       <div id="signed-in" hidden>
         <p id="signed-in-as" class="small-note"></p>
         <button id="sign-out" class="button secondary full-width" type="button" data-i18n="join.signOut"></button>
@@ -231,7 +214,7 @@
         <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow" data-i18n="preview.eyebrow"></p><h1 id="preview-title" data-i18n="preview.title"></h1></div>
+        <h1 id="preview-title" data-i18n="preview.title"></h1>
       </div>
       <div id="preview-content"></div>
       <div id="preview-feedback" class="feedback" role="status" hidden></div>
@@ -244,21 +227,32 @@
         <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow" data-i18n="help.eyebrow"></p><h1 id="help-title" data-i18n="help.title"></h1></div>
+        <h1 id="help-title" data-i18n="help.title"></h1>
       </div>
-      <div class="panel">
+      <div class="panel help-how">
         <h2 data-i18n="help.using.title"></h2>
+        <ol class="how-steps">
+          <li><span class="how-picture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="currentColor"/><circle cx="12" cy="10" r="2.6" fill="#FFFFFF"/></svg></span><span data-i18n="help.step.area"></span></li>
+          <li><span class="how-picture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12h12v5H2z" fill="currentColor"/><circle cx="6" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14h3l2-6 1.5-4 1 4-1 2-2 5v7M17 14v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg></span><span data-i18n="help.step.collector"></span></li>
+          <li><span class="how-picture"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1z" fill="currentColor"/></svg></span><span data-i18n="help.step.call"></span></li>
+        </ol>
         <p data-i18n="help.using.body"></p>
-        <p id="help-listings-note" data-i18n="help.using.demo"></p>
+        <p id="help-listings-note" class="small-note" data-i18n="help.using.demo"></p>
       </div>
-      <form id="report-form" class="panel form-panel">
+      <form id="report-form" class="panel form-panel report-form" novalidate>
         <h2 data-i18n="help.report.title"></h2>
-        <div id="report-target" class="notice" hidden></div>
-        <label for="report-type" data-i18n="help.report.type"></label>
-        <select id="report-type" name="type"></select>
+        <div id="report-target" class="report-target" hidden></div>
+        <fieldset class="reason-group" aria-describedby="report-type-error">
+          <legend data-i18n="help.report.type"></legend>
+          <p id="report-type-error" class="field-error reason-error" hidden data-i18n="help.report.chooseReason"></p>
+          <div id="report-reasons" class="reason-tiles"></div>
+        </fieldset>
         <label for="report-message" data-i18n="help.report.details"></label>
-        <textarea id="report-message" name="message" required maxlength="1000" rows="4" data-i18n-placeholder="help.report.detailsPlaceholder"></textarea>
-        <button id="report-submit" class="button primary" type="submit" data-i18n="help.report.submit"></button>
+        <textarea id="report-message" name="message" maxlength="1000" rows="3" data-i18n-placeholder="help.report.detailsPlaceholder"></textarea>
+        <button id="report-submit" class="button primary send-button" type="submit">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11.5 21 3l-6.5 18-3-7.5z" fill="currentColor"/><path d="m11.5 13.5 4-4" stroke="#147D59" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span id="report-submit-label" data-i18n="help.report.submit"></span>
+        </button>
         <p class="small-note" data-i18n="help.report.privacy"></p>
       </form>
       <div id="report-feedback" class="feedback" role="status" hidden></div>
@@ -270,7 +264,16 @@
         <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow" data-i18n="privacy.eyebrow"></p><h1 id="privacy-title" data-i18n="privacy.title"></h1></div>
+        <h1 id="privacy-title" data-i18n="privacy.title"></h1>
+      </div>
+      <div class="panel privacy-short">
+        <h2 data-i18n="privacy.short.title"></h2>
+        <ul class="privacy-points">
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21a8 8 0 0 1 16 0z" fill="currentColor"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.signIn"></span></li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11 12 3l9 8v10H3z" fill="currentColor"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.address"></span></li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="currentColor"/><circle cx="12" cy="10" r="2.6" fill="#FFFFFF"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.location"></span></li>
+          <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v10M9 9.5h4.5a1.8 1.8 0 0 1 0 3.5h-3a1.8 1.8 0 0 0 0 3.5H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 3l18 18" stroke="#B42318" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="privacy.short.sell"></span></li>
+        </ul>
       </div>
       <p class="intro" data-i18n="privacy.intro"></p>
       <div class="panel prose">
@@ -306,7 +309,7 @@
         <button class="back-button" type="button" data-back data-i18n-aria-label="app.back">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div><p class="eyebrow" data-i18n="admin.eyebrow"></p><h1 id="admin-title" data-i18n="admin.title"></h1></div>
+        <h1 id="admin-title" data-i18n="admin.title"></h1>
       </div>
       <div id="admin-content"></div>
     </section>

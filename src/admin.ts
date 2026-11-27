@@ -359,7 +359,7 @@ function areasSection(data: AdminData): string {
 }
 
 const filterLabel = (kind: "area" | "vehicle" | "waste", value: string | null): string => {
-  if (!value || value === "all") return t(kind === "area" ? "find.areaAll" : kind === "vehicle" ? "find.vehicleAll" : "find.wasteAll");
+  if (!value || value === "all") return t(kind === "area" ? "find.areaAll" : kind === "vehicle" ? "admin.activity.vehicleAll" : "admin.activity.wasteAll");
   if (kind === "area") return value === OTHER_AREA ? t("lookup.area.other") : areaName(value);
   if (kind === "vehicle") return isVehicle(value) ? vehicleLabel(value) : value;
   return isWaste(value) ? wasteLabel(value) : value;
