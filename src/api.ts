@@ -1,0 +1,124 @@
+// Reads from the hosted Supabase project through its REST API. Plain fetch
+// instead of supabase-js keeps the app small on slow, paid data. Row-level
+// security on the server decides what each request can see.
+import type { Database } from "./types/db";
+
+export type PublicCollectorRow = Database["public"]["Views"]["public_collectors"]["Row"];
+
+const url = import.meta.env.VITE_SUPABASE_URL;
+const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const TIMEOUT_MS = 10_000;
+
+export const backendConfigured = Boolean(url && key);
+
+async function get<T>(path: string): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetch(`${url}/rest/v1/${path}`, {
+      headers: { apikey: key ?? "", Accept: "application/json" },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// A request to the Supabase project ("rest/v1/…" or "auth/v1/…"), signed in
+// as the collector when a token is given. Throws only for network failures
+// and timeouts; callers read the status.
+export async function call(path: string, init: RequestInit = {}, token?: string): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(`${url}/${path}`, {
+      ...init,
+      headers: {
+        apikey: key ?? "",
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init.headers
+      },
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Ordered by name: never by anything paid (product rule 5).
+export const fetchPublicCollectors = (): Promise<PublicCollectorRow[]> =>
+  get("public_collectors?select=id,name,vehicle_type,description,phone,whatsapp,areas,waste_types,available_today&order=name.asc");
+
+// Areas, vehicle types, waste types and report types in one request.
+export const fetchLookups = (): Promise<unknown> => get("rpc/app_lookups");
+
+export type UsageEvent = Pick<Database["public"]["Tables"]["events"]["Insert"],
+  "name" | "area" | "vehicle" | "waste" | "channel" | "report_type" | "collector_id">;
+
+// Adds one anonymous usage count. Nothing is read back, nothing is retried,
+// and a failure is silent: counting must never get in a resident's way.
+// keepalive lets it finish while the phone switches to the dialler.
+export function sendEvent(event: UsageEvent): void {
+  if (!backendConfigured || !navigator.onLine) return;
+  void fetch(`${url}/rest/v1/events`, {
+    method: "POST",
+    headers: { apikey: key ?? "", "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify(event),
+    keepalive: true
+  }).catch(() => {});
+}
+
+// The id is made on the phone, so a report sent again is recognised (see sendReport).
+export type NewReport = Pick<Database["public"]["Tables"]["reports"]["Insert"], "id" | "type" | "message" | "collector_id">;
+
+// "retry": it didn't arrive but may later (offline, a timeout, the server
+// busy). "link-rejected": the server refused the listing it names, usually
+// because that listing is no longer shown. "rejected": it never will as it
+// stands. "unavailable": this build has no server to send to.
+export type SendResult = "sent" | "retry" | "link-rejected" | "rejected" | "unavailable";
+
+interface PostgrestError { code?: string; message?: string }
+
+async function errorOf(response: Response): Promise<PostgrestError> {
+  try {
+    return (await response.json()) as PostgrestError;
+  } catch {
+    return {};
+  }
+}
+
+const refusedLink = (error: PostgrestError, report: NewReport): boolean =>
+  Boolean(report.collector_id) && (
+    (error.code === "42501" && /row-level security/.test(error.message ?? "")) ||
+    (error.code === "23503" && /collector_id/.test(error.message ?? "")));
+
+// Residents can't read reports back, so the insert asks for nothing in return.
+export async function sendReport(report: NewReport): Promise<SendResult> {
+  if (!backendConfigured) return "unavailable";
+  if (!navigator.onLine) return "retry";
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetch(`${url}/rest/v1/reports`, {
+      method: "POST",
+      headers: { apikey: key ?? "", "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(report),
+      signal: controller.signal
+    });
+    if (response.ok) return "sent";
+    if (response.status >= 500 || response.status === 429) return "retry";
+    const error = await errorOf(response);
+    // An earlier attempt arrived, but its answer didn't (a timeout): the server
+    // already has this report.
+    if (report.id && error.code === "23505") return "sent";
+    return refusedLink(error, report) ? "link-rejected" : "rejected";
+  } catch {
+    return "retry";
+  } finally {
+    clearTimeout(timer);
+  }
+}
