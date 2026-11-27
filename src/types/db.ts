@@ -369,7 +369,7 @@ export type Database = {
           collector_id?: string | null
           created_at?: string
           id?: string
-          message: string
+          message?: string
           resolution_note?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
