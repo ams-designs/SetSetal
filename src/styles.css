@@ -275,7 +275,7 @@ h1[tabindex="-1"]:focus { outline: none; }
   border-radius: 16px;
 }
 .vehicle-art .picture { width: 80px; }
-.profile-title-row h2 { overflow-wrap: anywhere; }
+.profile-title-row h2 { overflow-wrap: break-word; }
 .detail-row { padding: 13px 0; border-bottom: 1px solid var(--border); }
 .detail-row:last-child { border-bottom: 0; }
 .detail-row strong { display: block; margin-bottom: 3px; font-size: 16px; }
@@ -366,9 +366,9 @@ h1[tabindex="-1"]:focus { outline: none; }
 
 .admin-section { margin-top: 22px; }
 .admin-card h3 { margin: 0 0 4px; }
-.report-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-message { white-space: pre-wrap; overflow-wrap: break-word; }
 .history-list { margin: 0; padding-left: 18px; }
-.history-list li { margin-bottom: 10px; overflow-wrap: anywhere; }
+.history-list li { margin-bottom: 10px; overflow-wrap: break-word; }
 .decision-form { margin-top: 12px; }
 
 .today-panel { margin-top: 14px; padding: 14px; background: var(--green-soft); border-radius: var(--radius-md); }
@@ -441,6 +441,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 .area-picker { margin-bottom: 14px; }
 .area-button {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -454,11 +455,21 @@ h1[tabindex="-1"]:focus { outline: none; }
   box-shadow: 0 6px 18px rgba(20, 125, 89, .22);
 }
 .area-button > .icon { width: 30px; height: 30px; }
-.area-button-text { display: grid; flex: 1; min-width: 0; }
+.area-button-text { display: grid; flex: 1 1 80px; min-width: 0; }
 .area-button-label { color: var(--white); font-size: 15px; font-weight: 700; }
-.area-button strong { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.area-button strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
 .area-change {
   flex: 0 0 auto;
+  margin-left: auto;
   padding: 8px 12px;
   color: var(--white);
   background: var(--green-dark);
@@ -475,7 +486,7 @@ h1[tabindex="-1"]:focus { outline: none; }
   border-radius: 0 0 20px 20px;
 }
 .area-options-title { display: flex; align-items: center; gap: 8px; color: var(--green-dark); font-size: 24px; }
-.area-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 12px; }
+.area-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 136px), 1fr)); gap: 10px; margin: 6px 0 12px; }
 .area-tile {
   display: flex;
   align-items: center;
@@ -489,7 +500,7 @@ h1[tabindex="-1"]:focus { outline: none; }
   border-radius: 16px;
   font-size: 19px;
   font-weight: 800;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   transition: transform .12s cubic-bezier(.2, .8, .2, 1);
 }
 .area-tile:active { transform: scale(.97); }
@@ -545,7 +556,7 @@ h1[tabindex="-1"]:focus { outline: none; }
   border-radius: 22px;
   box-shadow: 0 6px 18px rgba(23, 75, 58, .08);
 }
-.card-head { position: relative; display: flex; align-items: center; gap: 12px; }
+.card-head { position: relative; display: flex; align-items: flex-start; gap: 12px; }
 .card-picture {
   display: grid;
   flex: 0 0 auto;
@@ -557,7 +568,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 }
 .card-picture .picture { width: 66px; height: 50px; }
 .card-info { flex: 1; min-width: 0; }
-.card-info h3 { margin: 0 0 4px; font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; }
+.card-info h3 { margin: 0 0 4px; font-size: 21px; line-height: 1.15; overflow-wrap: break-word; }
 .card-link {
   padding: 0;
   color: var(--text);
@@ -571,7 +582,16 @@ h1[tabindex="-1"]:focus { outline: none; }
 .card-link:focus-visible { outline: none; }
 .card-link:focus-visible::after { outline: 3px solid var(--green); outline-offset: 2px; }
 .card-chevron { width: 24px; height: 24px; margin-right: -4px; color: var(--green); }
-.card-area { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--muted); font-size: 16px; }
+.card-area { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 6px; color: var(--muted); font-size: 16px; }
+.card-area .icon { margin-top: 2px; }
+.collector-card .card-area span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.card-chevron { align-self: center; }
 .card-area .icon { width: 20px; height: 20px; color: var(--green); }
 .today-label, .demo-label {
   display: inline-flex;
@@ -614,7 +634,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 
 /* Profile: the vehicle picture first, then who, where and what. */
 .profile-card { display: grid; gap: 10px; }
-.profile-card h2 { margin: 4px 0 0; font-size: 27px; line-height: 1.15; overflow-wrap: anywhere; }
+.profile-card h2 { margin: 4px 0 0; font-size: 27px; line-height: 1.15; overflow-wrap: break-word; }
 .profile-picture {
   display: flex;
   flex-direction: column;
@@ -641,7 +661,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 /* Report a problem: pick a picture; writing is optional. */
 .report-form legend { padding: 0; margin-bottom: 8px; color: var(--green-dark); font-size: 22px; font-weight: 800; }
 .reason-group { margin: 0; padding: 0; border: 0; }
-.reason-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.reason-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 136px), 1fr)); gap: 10px; }
 .reason-tile {
   position: relative;
   display: flex;
@@ -737,7 +757,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 .join-step h2:focus { outline: none; }
 .join-step .small-note { margin: 0; }
 .join-step input:not([type="checkbox"]):not([type="radio"]) { font-size: 20px; }
-.pick-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pick-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 136px), 1fr)); gap: 10px; }
 .pick-tile {
   position: relative;
   display: flex;
@@ -756,7 +776,7 @@ h1[tabindex="-1"]:focus { outline: none; }
   font-size: 18px;
   font-weight: 800;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   transition: transform .12s cubic-bezier(.2, .8, .2, 1);
 }
 .pick-tile:active { transform: scale(.97); }
@@ -803,7 +823,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 .my-listing { display: grid; gap: 12px; }
 .my-listing h2 { margin: 0; }
 .my-listing-head { display: flex; align-items: center; gap: 12px; }
-.my-listing-head h3 { margin: 0 0 4px; font-size: 22px; overflow-wrap: anywhere; }
+.my-listing-head h3 { margin: 0 0 4px; font-size: 22px; overflow-wrap: break-word; }
 .my-listing-head .card-area { margin: 0; }
 .status-box p { margin: 6px 0 0; }
 .result-paused { background: #EEF0EE; border: 2px solid #C4CBC6; }
