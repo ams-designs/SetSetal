@@ -107,7 +107,6 @@ test("guide screenshots", async ({ page, context }) => {
   // One question per screen.
   const next = () => page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByLabel("Name or business name").fill("Fatou's donkey cart");
-  await shotOf(page, page.locator("#registration-form"), "12a-step-name");
   await next();
   await page.getByLabel("WhatsApp number (optional)").fill("7123456");
   await next();
@@ -116,7 +115,6 @@ test("guide screenshots", async ({ page, context }) => {
   await next();
   await page.getByRole("checkbox", { name: "Brikama", exact: true }).check();
   await page.getByRole("checkbox", { name: "Brikama Nyambai" }).check();
-  await shotOf(page, page.locator("#registration-form"), "12b-step-areas");
   await next();
   await page.getByRole("checkbox", { name: "Household bags" }).check();
   await page.getByRole("checkbox", { name: "Garden waste" }).check();
