@@ -42,7 +42,7 @@
   "find.countReal.other": "{count} listings",
   "find.empty.titleReal": "No matching listings",
   "listing.demoLabel": "Demonstration listing",
-  "listing.detailsLabel": "More about {name}",
+  "listing.takes": "What they take",
   "listing.notFound": "This listing could not be found.",
   "listing.savedNote": "Saved {date}. Details may have changed.",
   "listing.availableToday": "Collecting today",

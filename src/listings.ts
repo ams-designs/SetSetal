@@ -275,7 +275,7 @@ const todayLabel = (listing: Listing): string =>
     : "";
 
 const wastePictures = (waste: readonly WasteId[]): string => `
-          <ul class="waste-list">${waste.map((id) => `
+          <ul class="waste-list" aria-label="${escapeHTML(t("listing.takes"))}">${waste.map((id) => `
             <li>${wastePicture(id)}<span>${escapeHTML(wasteLabel(id))}</span></li>`).join("")}
           </ul>`;
 
@@ -315,8 +315,7 @@ function collectorCard(listing: Listing): string {
         <div class="card-head">
           <div class="card-picture">${iconFor(listing.vehicle)}</div>
           <div class="card-info">
-            <h3><button class="card-link" type="button" data-profile="${escapeHTML(listing.id)}"
-              aria-label="${escapeHTML(t("listing.detailsLabel", { name }))}">${escapeHTML(name)}</button></h3>
+            <h3><button class="card-link" type="button" data-profile="${escapeHTML(listing.id)}">${escapeHTML(name)}</button></h3>
             <p class="card-area">${icon("pin")}<span>${escapeHTML(areaList(listing))}</span></p>
             ${todayLabel(listing)}${demoLabel(listing)}
           </div>
